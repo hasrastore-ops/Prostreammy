@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pembayaran Berjaya - PROSTREAM</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;900&display=swap" rel="stylesheet">
+
+    <!-- Meta Pixel Code -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '2276519576162204', {
+    'domain': ['prostreamfb.vercel.app']
+});
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=2276519576162204&ev=PageView&noscript=1"
+/></noscript>
+<!-- End Meta Pixel Code -->
+    
+    <style>
+        :root {
+            --primary-color: #f9c74f;
+            --secondary-color: #f94144;
+            --bg-color: #0a0e27;
+            --surface-color: #151932;
+            --text-color: #e0e1dd;
+            --text-muted: #a8a9ad;
+            --font-family: 'Poppins', sans-serif;
+            --success-color: #43b581;
+            --pending-color: #f9c74f;
+            --error-color: #f94144;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 20px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        header {
+            text-align: center;
+            padding: 40px 0;
+        }
+
+        .status-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: checkmark 0.5s ease-in-out;
+        }
+
+        .success-icon { color: var(--success-color); }
+        .pending-icon { color: var(--pending-color); }
+        .error-icon { color: var(--error-color); }
+
+        @keyframes checkmark {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        h1 { font-size: 2.5rem; font-weight: 700; margin-bottom: 20px; }
+        .success-title { color: var(--success-color); }
+        .pending-title { color: var(--pending-color); }
+        .error-title { color: var(--error-color); }
+        
+        h2 { font-size: 1.8rem; font-weight: 600; margin-bottom: 30px; color: var(--text-color); }
+
+        .status-card {
+            background-color: var(--surface-color);
+            border-radius: 15px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            margin-bottom: 30px;
+            text-align: center;
+            width: 100%;
+        }
+
+        .order-details {
+            background-color: rgba(249, 199, 79, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 30px 0;
+            text-align: left;
+        }
+
+        .order-details h3 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .detail-row:last-child {
+            border-bottom: none;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .detail-row span:first-child { color: var(--text-color); }
+
+        .steps {
+            margin: 30px 0;
+            text-align: left;
+        }
+
+        .steps h3 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+        }
+
+        .step {
+            display: flex;
+            margin-bottom: 20px;
+            align-items: flex-start;
+        }
+
+        .step-number {
+            background-color: var(--primary-color);
+            color: var(--bg-color);
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+
+        .step-content h4 {
+            margin-bottom: 5px;
+            color: var(--primary-color);
+        }
+
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 15px 35px;
+            background-color: var(--primary-color);
+            color: var(--bg-color);
+            font-weight: 700;
+            font-size: 1.1rem;
+            border-radius: 50px;
+            text-align: center;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            cursor: pointer;
+            border: none;
+            text-decoration: none;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(249, 199, 79, 0.3);
+        }
+
+        .btn-secondary {
+            background-color: transparent;
+            border: 2px solid var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--primary-color);
+            color: var(--bg-color);
+        }
+
+        .btn-whatsapp {
+            background-color: #25D366;
+            color: white;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-whatsapp:hover {
+            background-color: #128C7E;
+        }
+
+        .contact-info {
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        .contact-info p { margin-bottom: 10px; }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            border-top: 1px solid #2a2f4a;
+            font-size: 0.9rem;
+        }
+
+        footer a { margin: 0 10px; color: var(--primary-color); }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            z-index: 1001;
+            transform: translateX(400px);
+            transition: transform 0.3s ease-out;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .notification.show { transform: translateX(0); }
+        .notification.success { background-color: var(--success-color); color: white; }
+        .notification.error { background-color: var(--secondary-color); color: white; }
+        .notification.pending { background-color: var(--pending-color); color: var(--bg-color); }
+        .notification-icon { font-size: 20px; }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 2rem; }
+            h2 { font-size: 1.5rem; }
+            .status-card { padding: 30px 20px; }
+            .detail-row { flex-direction: column; }
+            .detail-row span:first-child { margin-bottom: 5px; }
+            .action-buttons { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div id="statusIcon" class="status-icon"></div>
+            <h1 id="statusTitle"></h1>
+            <h2 id="statusSubtitle"></h2>
+        </header>
+
+        <main>
+            <div class="status-card">
+                <p id="statusMessage"></p>
+                
+                <!-- Order Details Section -->
+                <div class="order-details" id="orderDetails">
+                    <div class="loading-spinner"></div>
+                    <p style="text-align: center;">Memuatkan butiran pesanan...</p>
+                </div>
+
+                <!-- Steps Section (only for success) -->
+                <div id="stepsSection" class="steps" style="display: none;">
+                    <h3>Langkah Seterusnya:</h3>
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h4>Semak Emel & WhatsApp</h4>
+                            <p>Anda akan menerima pautan muat turun dan panduan pemasangan dalam masa 15 minit.CHECK FOLDER SPAM atau SEARCH "prostream" atau "toyyibpay" </p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h4>Muat Turun Aplikasi</h4>
+                            <p>Ikuti panduan yang disediakan untuk memasang aplikasi pada peranti Android TV anda.</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h4>Nikmati Kandungan</h4>
+                            <p>Mula menikmati filem terkini, drama, anime dan saluran TV langsung tanpa had!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="action-buttons">
+                    <a href="https://prostreamfb.vercel.app/" class="btn">Kembali ke Laman Utama</a>
+                    <a href="#" class="btn btn-whatsapp" id="whatsapp-btn">Hubungi WhatsApp</a>
+                </div>
+            </div>
+
+            <div class="contact-info">
+                <h3>Perlu Bantuan?</h3>
+                <p>WhatsApp: +60 11-2741 2402</p>
+                <p>Emel: support@prostream.com</p>
+                <p>Kami sedia membantu 24/7</p>
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 2025 PROSTREAM. Hak Cipta Terpelihara.</p>
+            <a href="#">Dasar Privasi</a> | <a href="#">Terma & Syarat</a> | <a href="#">Hubungi Kami</a>
+        </footer>
+    </div>
+
+    <!-- Notification element for status updates -->
+    <div id="notification" class="notification">
+        <span class="notification-icon"></span>
+        <span class="notification-text"></span>
+    </div>
+
+        <script>
+        // ====================================
+        //      CONFIGURATION
+        // ====================================
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxpO0maKCB0x1WosPV1fkCP80MJx7ShA26OS4QwCf0xVsN7x5dtdWD6F7Bk8w2nMVfo/exec';
+
+        // Helper: Show Notification
+        function showNotification(message, type) {
+            const notification = document.getElementById('notification');
+            const iconElement = notification.querySelector('.notification-icon');
+            const textElement = notification.querySelector('.notification-text');
+            
+            notification.className = `notification ${type}`;
+            textElement.textContent = message;
+            
+            if (type === 'success') iconElement.textContent = '✓';
+            else if (type === 'pending') iconElement.textContent = '⏳';
+            else iconElement.textContent = '✗';
+            
+            notification.classList.add('show');
+            setTimeout(() => { notification.classList.remove('show'); }, 3000);
+        }
+
+        // ====================================
+        //      GOOGLE SHEETS INTEGRATION
+        // ====================================
+        async function updatePaymentStatus(orderId) {
+            try {
+                const response = await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded', },
+                    body: new URLSearchParams({ action: 'updatePayment', orderId: orderId })
+                });
+                
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    console.log('✅ Payment status updated in Google Sheets');
+                    showNotification('Status pembayaran telah dikemaskini. Emel pengesahan telah dihantar.', 'success');
+                    return true;
+                } else {
+                    console.error('❌ Failed to update payment status:', result.message);
+                    showNotification('Ralat mengemaskini status pembayaran: ' + result.message, 'error');
+                    return false;
+                }
+            } catch (error) {
+                console.error('❌ Error updating payment status:', error);
+                showNotification('Ralat menghubungi pelayan. Sila segarkan halaman.', 'error');
+                return false;
+            }
+        }
+
+        // ====================================
+        //      CONVERSION API & PIXEL
+        // ====================================
+        async function sendConversionEvent(orderData) {
+            try {
+                // 1. Prepare Customer Data (First/Last Name split)
+                const fullName = orderData.orderData?.customerName || 'Pelanggan';
+                const nameParts = fullName.trim().split(' ');
+                const firstName = nameParts[0];
+                const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+
+                // 2. Generate Unique Event ID
+                const billNo = orderData.billNo || orderData.orderId || 'UNKNOWN';
+                const eventId = `purchase_${billNo}_${Date.now()}`;
+
+                // 3. Prepare Payload matching your conversion-api.js schema
+                const payload = {
+                    eventName: 'Purchase',
+                    eventId: eventId,
+                    value: orderData.totalAmount || orderData.orderData?.total || 0,
+                    currency: 'MYR',
+                    customerData: {
+                        email: orderData.orderData?.customerEmail || 'email@example.com',
+                        phone: orderData.orderData?.customerPhone || '0123456789',
+                        firstName: firstName,
+                        lastName: lastName
+                    },
+                    contentData: {
+                        content_name: 'PROSTREAM 4 App Power Package',
+                        content_category: 'Streaming',
+                        content_ids: ['prostream_4app_package'],
+                        content_type: 'product'
+                    }
+                };
+
+                console.log('Sending Conversion API request:', payload);
+
+                // 4. Send to your API
+                const response = await fetch('/api/conversion-api', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', },
+                    body: JSON.stringify(payload)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    console.log('✅ Conversion API sent successfully:', result.message);
+                    return true;
+                } else {
+                    console.error('❌ Conversion API failed:', result.error);
+                    return false;
+                }
+            } catch (error) {
+                console.error('❌ Error sending conversion event:', error);
+                return false;
+            }
+        }
+
+        function sendMetaPixelConversion(orderData) {
+            try {
+                const purchaseValue = orderData.totalAmount || orderData.orderData?.total || 0;
+                
+                // Use the same Event ID for deduplication
+                const billNo = orderData.billNo || orderData.orderId || 'UNKNOWN';
+                const eventId = `purchase_${billNo}_${Date.now()}`;
+
+                // Standard Browser Pixel Event (Basic matching is safer if Advanced data is partial)
+                fbq('track', 'Purchase', {
+                    content_name: 'PROSTREAM 4 App Power Package',
+                    content_category: 'Streaming',
+                    content_ids: ['prostream_4app_package'],
+                    content_type: 'product',
+                    value: purchaseValue,
+                    currency: 'MYR',
+                    eventID: eventId // CRITICAL: Matches the API event ID for deduplication
+                });
+                
+                console.log('✅ Meta Pixel Purchase event fired successfully (Browser)');
+                return true;
+            } catch (error) {
+                console.error('❌ Error sending Meta Pixel conversion:', error);
+                return false;
+            }
+        }
+
+        // ====================================
+        //      UI DISPLAY FUNCTIONS
+        // ====================================
+        function displayOrderDetails(orderData) {
+            const orderDetailsElement = document.getElementById('orderDetails');
+            orderDetailsElement.innerHTML = `
+                <h3>Butiran Pesanan</h3>
+                <div class="detail-row"><span>No. Pesanan:</span><span>${orderData.billNo || orderData.billExternalReferenceNo || 'N/A'}</span></div>
+                <div class="detail-row"><span>Nama:</span><span>${orderData.orderData?.customerName || 'N/A'}</span></div>
+                <div class="detail-row"><span>Emel:</span><span>${orderData.orderData?.customerEmail || 'N/A'}</span></div>
+                <div class="detail-row"><span>No. Telefon:</span><span>${orderData.orderData?.customerPhone || 'N/A'}</span></div>
+                <div class="detail-row"><span>Produk:</span><span>${orderData.orderData?.product || 'N/A'}</span></div>
+                <div class="detail-row"><span>Jumlah:</span><span>RM ${(orderData.totalAmount || orderData.orderData?.total || 0).toFixed(2)}</span></div>
+                ${orderData.timestamp ? `<div class="detail-row"><span>Tarikh:</span><span>${new Date(orderData.timestamp).toLocaleString('ms-MY')}</span></div>` : ''}
+            `;
+        }
+
+        function displayPaymentStatus(statusId, billCode, orderId, msg, transactionId) {
+            const statusIcon = document.getElementById('statusIcon');
+            const statusTitle = document.getElementById('statusTitle');
+            const statusSubtitle = document.getElementById('statusSubtitle');
+            const statusMessage = document.getElementById('statusMessage');
+            const stepsSection = document.getElementById('stepsSection');
+            
+            statusIcon.className = 'status-icon';
+            statusTitle.className = '';
+            
+            if (statusId === '1') {
+                // SUCCESS STATUS
+                statusIcon.innerHTML = '✓';
+                statusIcon.classList.add('success-icon');
+                statusTitle.textContent = 'Pembayaran Berjaya!';
+                statusTitle.classList.add('success-title');
+                statusSubtitle.textContent = 'Terima kasih atas pembelian anda';
+                statusMessage.textContent = 'Pembayaran anda telah berjaya diproses. Kami sedang menyediakan akaun anda dan akan menghantar maklumat lengkap melalui emel dan WhatsApp dalam masa terdekat.';
+                stepsSection.style.display = 'block';
+                return true;
+            } else if (statusId === '2') {
+                // PENDING
+                statusIcon.innerHTML = '⏳';
+                statusIcon.classList.add('pending-icon');
+                statusTitle.textContent = 'Pembayaran Dalam Proses';
+                statusTitle.classList.add('pending-title');
+                statusSubtitle.textContent = 'Pembayaran anda sedang diproses';
+                statusMessage.textContent = 'Pembayaran anda sedang diproses oleh bank. Kami akan menghantar pengesahan sebaik sahaja pembayaran selesai diproses. Sila semak emel anda dalam masa 30 minit.';
+                stepsSection.style.display = 'none';
+                return false;
+            } else {
+                // FAILED
+                statusIcon.innerHTML = '✗';
+                statusIcon.classList.add('error-icon');
+                statusTitle.textContent = 'Pembayaran Gagal';
+                statusTitle.classList.add('error-title');
+                statusSubtitle.textContent = 'Maaf, pembayaran anda tidak berjaya';
+                statusMessage.textContent = `Pembayaran anda telah ditolak. Sila cuba lagi atau hubungi kami untuk bantuan. Kod rujukan: ${transactionId || billCode}`;
+                stepsSection.style.display = 'none';
+                return false;
+            }
+        }
+
+        function showOrderDetailsError() {
+            const orderDetailsElement = document.getElementById('orderDetails');
+            orderDetailsElement.innerHTML = `
+                <h3>Butiran Pesanan</h3>
+                <p style="text-align: center; color: var(--secondary-color);">Maaf, kami tidak dapat memuatkan butiran pesanan anda.</p>
+                <p style="text-align: center;">Sila hubungi sokongan pelanggan kami untuk bantuan.</p>
+            `;
+        }
+
+        function updateWhatsAppButton(orderData) {
+            const whatsappBtn = document.getElementById('whatsapp-btn');
+            if (whatsappBtn && orderData.orderData) {
+                const message = encodeURIComponent(`Hai%2C%20saya%20baru%20sahaja%20membeli%20pakej%20PROSTREAM%20dan%20perlu%20bantuan.%20Nama%3A%20${orderData.orderData.customerName}%2C%20Email%3A%20${orderData.orderData.customerEmail}%2C%20No.%20Telefon%3A%20${orderData.orderData.customerPhone}`);
+                whatsappBtn.href = `https://wa.me/60172703949?text=${message}`;
+            }
+        }
+
+        // ====================================
+        //      MAIN LOGIC
+        // ====================================
+        async function loadOrderDetails() {
+            console.log('🔄 Loading order details...');
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const statusId = urlParams.get('status_id');
+                const billCode = urlParams.get('billcode');
+                const orderId = urlParams.get('order_id');
+                const msg = urlParams.get('msg');
+                const transactionId = urlParams.get('transaction_id');
+                
+                // --- FLOW 1: TOYYIBPAY REDIRECT ---
+                if (statusId) {
+                    console.log('🔍 ToyyibPay redirect detected. Processing status...');
+                    
+                    // 1. Display Status UI
+                    const isPaymentSuccessful = displayPaymentStatus(statusId, billCode, orderId, msg, transactionId);
+                    
+                    // 2. Handle Non-Successful Payment (Stop here, do not fire Purchase API)
+                    if (!isPaymentSuccessful) {
+                        const orderDetailsElement = document.getElementById('orderDetails');
+                        orderDetailsElement.innerHTML = `
+                            <h3>Butiran Pesanan</h3>
+                            <div class="detail-row"><span>No. Pesanan:</span><span>${billCode || 'N/A'}</span></div>
+                            <div class="detail-row"><span>ID Transaksi:</span><span>${transactionId || 'N/A'}</span></div>
+                            <div class="detail-row"><span>Status:</span><span>${statusId === '1' ? 'Berjaya' : statusId === '2' ? 'Dalam Proses' : statusId === '3' ? 'Gagal' : 'Tidak Diketahui'}</span></div>
+                            <div class="detail-row"><span>Mesej:</span><span>${msg || 'N/A'}</span></div>
+                        `;
+                        const whatsappBtn = document.getElementById('whatsapp-btn');
+                        if (whatsappBtn) {
+                            const message = encodeURIComponent(`Hai%2C%20saya%20mempunyai%20masalah%20dengan%20pembayaran%20saya.%20No.%20Pesanan%3A%20${billCode || 'N/A'}%2C%20ID%20Transaksi%3A%20${transactionId || 'N/A'}`);
+                            whatsappBtn.href = `https://wa.me/601127412402?text=${message}`;
+                        }
+                        return; // EXIT EARLY
+                    }
+
+                    // 3. HANDLE SUCCESSFUL PAYMENT
+                    console.log('✅ Payment Successful. Proceeding with API & Pixel firing.');
+
+                    // Reconstruct orderData (ToyyibPay doesn't send back all user data, so we enrich from localStorage)
+                    let orderData = {
+                        billNo: billCode,
+                        billExternalReferenceNo: orderId,
+                        transactionId: transactionId,
+                        orderData: {
+                            customerName: 'Pelanggan', // Fallback
+                            customerEmail: 'email@example.com', // Fallback
+                            customerPhone: '0123456789', // Fallback
+                            product: 'PROSTREAM 4 App Power Package',
+                            total: 34.90
+                        },
+                        totalAmount: 34.90,
+                        timestamp: new Date().toISOString(),
+                    };
+                    
+                    // Enrich with LocalStorage data if available
+                    const pendingOrder = localStorage.getItem('pendingOrder');
+                    if (pendingOrder) {
+                        const lsOrderData = JSON.parse(pendingOrder);
+                        orderData.orderData = lsOrderData.orderData || orderData.orderData;
+                        orderData.totalAmount = lsOrderData.totalAmount || orderData.totalAmount;
+                    }
+                    
+                    displayOrderDetails(orderData);
+                    updateWhatsAppButton(orderData);
+                    
+                    // 4. FIRE CONVERSIONS (API + PIXEL) ONLY ON SUCCESS
+                    let updateOrderId = orderData.billExternalReferenceNo || orderData.billNo;
+                    
+                    // A. Update Google Sheets (Non-blocking but good practice to do)
+                    if (updateOrderId) {
+                        console.log('Updating Google Sheets status...');
+                        updatePaymentStatus(updateOrderId); 
+                    }
+
+                    // B. Send Server-Side Conversion API (CAPI)
+                    await sendConversionEvent(orderData);
+                    
+                    // C. Send Browser Meta Pixel
+                    sendMetaPixelConversion(orderData);
+                    
+                    // 5. Cleanup
+                    localStorage.removeItem('pendingOrder');
+                    return;
+                }
+
+                // --- FLOW 2: QR PAYMENT / LOCALSTORAGE ---
+                console.log('🔍 No ToyyibPay status_id found. Falling back to localStorage/QR logic.');
+                let pendingOrder = localStorage.getItem('pendingOrder');
+                
+                if (!pendingOrder) {
+                    console.error('❌ No pending order found in localStorage and no URL parameters.');
+                    showOrderDetailsError();
+                    document.getElementById('statusIcon').innerHTML = '✗';
+                    document.getElementById('statusIcon').className = 'status-icon error-icon';
+                    document.getElementById('statusTitle').textContent = 'Status Pembayaran Tidak Diketahui';
+                    document.getElementById('statusTitle').className = 'error-title';
+                    document.getElementById('statusSubtitle').textContent = 'Tidak dapat mengesahkan status pembayaran';
+                    document.getElementById('statusMessage').textContent = 'Kami tidak dapat mengesahkan status pembayaran anda. Sila hubungi sokongan pelanggan.';
+                    return;
+                }
+                
+                const orderData = JSON.parse(pendingOrder);
+                console.log('✅ Parsed order data from localStorage:', orderData);
+                
+                // QR Flow assumes success (because user passed OCR in qr.html)
+                // 1. Display Success UI
+                displayPaymentStatus('1', orderData.billNo, orderData.orderId, 'ok', orderData.transactionId);
+                displayOrderDetails(orderData);
+                updateWhatsAppButton(orderData);
+                
+                // 2. FIRE CONVERSIONS (API + PIXEL)
+                let updateOrderId = orderData.billExternalReferenceNo || orderData.billNo;
+                
+                if (updateOrderId) {
+                    console.log('Updating Google Sheets status (QR)...');
+                    updatePaymentStatus(updateOrderId);
+                }
+
+                // API & Pixel
+                await sendConversionEvent(orderData);
+                sendMetaPixelConversion(orderData);
+
+                // 3. Cleanup
+                localStorage.removeItem('pendingOrder');
+                
+            } catch (error) {
+                console.error('❌ Error in loadOrderDetails:', error);
+                showOrderDetailsError();
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            await loadOrderDetails();
+        });
+    </script>
+</body>
+</html>
