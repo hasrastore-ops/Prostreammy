@@ -29,7 +29,7 @@ export default async function handler(req, res) {
 
         // Facebook Conversions API endpoint
         const pixelId = '2276519576162204';
-        const accessToken = 'EAAcJZCFldLZAYBP2Rt17ob7AJUEAPnCZCdiIOHZBereJjCRiofT1SottrBAL8EjPME1L6LANNoRN5I0yootHZCYioBgN2SUZBHPbUU93iRd54xOSeM7RbiHHIqemm6zM5p6GLIZAHNOezCVLROwIER8spOyZB3iC4wYTB1qZBADgHpWlZCpcZC0VA3Hi26sRJ85fwZDZD';
+        const accessToken = 'EAAcJZCFldLZAYBRJ0UeAUViX0DBqwWoGPdFA5Ej7Pt0zbNeup8DTZAzIhfJvgLlMBXZAt0gllOF7MKIwO7csc6Ap0fYkFJ8kb3g0DsqLm0ehc0kvDPeYxjwUkzy5qXpJrJtyI41ivqDZAzUZBWCUuISVtv0gmFmpttoImfFSoUbqH7PtBhxwlkMtUADgVSmAZDZD';
         
         // Prepare the event data
         const event = {
