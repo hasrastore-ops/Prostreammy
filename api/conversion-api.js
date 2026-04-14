@@ -36,7 +36,7 @@ export default async function handler(req, res) {
             event_name: eventName,
             event_time: Math.floor(Date.now() / 1000),
             action_source: 'website',
-            event_source_url: 'https://prostreamfb.vercel.app/payment-successful.html',
+            event_source_url: 'https://prostreammy.vercel.app/payment-successful.html',
             event_id: eventId,
             user_data: {
                 client_user_agent: req.headers['user-agent'],
