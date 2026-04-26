@@ -2869,7 +2869,7 @@ src="https://www.facebook.com/tr?id=2276519576162204&ev=PageView&noscript=1"
 <div id="final-warning-modal" class="modal">
     <div class="modal-content" style="border-top: 5px solid #f94144;">
         <span class="modal-close" onclick="closeFinalWarning()">&times;</span>
-        <h3 style="color: #f94144;">⚠️ Maaf, Whatsapp sedang mengalami masalah</h3>
+        <h3 style="color: #f94144;">⚠️ Pastikan dan baca semua Q&A sebelum contact Whatsapp</h3>
         
         <div style="text-align: left; background: rgba(249, 65, 68, 0.1); padding: 15px; border-radius: 10px; margin-bottom: 20px;">
             <p style="color: var(--text-color); margin-bottom: 10px;"><strong>Details</strong></p>
@@ -2883,10 +2883,10 @@ src="https://www.facebook.com/tr?id=2276519576162204&ev=PageView&noscript=1"
             </ul>
         </div>
 
-        <p style="margin-bottom: 20px;">Harap Maaf, WhatsApp mengalami <strong>masalah teknikal</strong> Boleh tekan button review di bawah untuk baca feedback pengguna yang dah guna.</p>
+        <p style="margin-bottom: 20px;">Sila pastikan anda telah membaca Q&A di atas sebelum menghubungi kami untuk menjimatkan masa.</p>
         
-        <div style="display: flex; gap: 10px; justify-content: center;">
-            
+        <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+            <a id="whatsapp-final-btn" href="https://wa.me/60172703949?text=Hi%2C%20saya%20dah%20baca%20FAQ(Q&A).%20Saya%20ada%20soalan%20lain%20:." target="_blank" class="btn" style="background-color: #25D366; text-decoration: none; padding: 10px 20px;">💬 Contact WhatsApp</a>
             <button class="btn" onclick="openreview()" style="padding: 10px 20px;">Lihat Feedback/Review</button>
             <button class="btn" onclick="testinstall()" style="padding: 10px 20px;">Test Install</button>
         </div>
@@ -3811,22 +3811,22 @@ function handleFPXMaintenanceError() {
 
         // Add this to your JavaScript
 // Show progress indicator when WhatsApp button is clicked
+// Function to show FAQ Modal
 function showFAQModal(event) {
     event.preventDefault();
     
-    // If user has already visited FAQ, proceed to WhatsApp
+    // If user has already visited FAQ, skip to the Warning Layer
     if (hasVisitedFAQ) {
-        window.open('https://wa.me/60172703949?text=Hi%2C%20saya%20nak%20order%20pakej%20prostream%20ni.%20tapi%20ada%20soalan%2C%3A%20', '_blank');
+        showFinalWarningModal();
         return;
     }
     
-    // Show progress indicator
-    document.getElementById('faq-progress').classList.add('visible');
+    // Show the FAQ Modal - use BOTH class and style for reliability
+    const faqModal = document.getElementById('faq-modal');
+    faqModal.style.display = 'flex';
+    faqModal.classList.add('active');
     
-    // Otherwise show the modal
-    document.getElementById('faq-modal').classList.add('active');
-    
-    // Track modal view with Meta Pixel
+    // Track modal view
     fbq('track', 'ViewContent', {
         content_name: 'FAQ Modal',
         content_category: 'User Engagement'
@@ -3913,8 +3913,7 @@ function closeFinalWarning() {
 // Function to actually open WhatsApp after accepting warnings
 function confirmFinalWhatsApp() {
     closeFinalWarning();
-    // Open WhatsApp
-    window.open('https://wa.me/60172703949?text=Hi%2C%20saya%20dah%20baca%20FAQ%20dan%20faham%20syaratnya.%20Saya%20ada%20masalah%20teknikal.', '_blank');
+    window.open('https://wa.me/60172703949?text=Hi%2C%20saya%20dah%20baca%20FAQ%20dan%20faham%20syaratnya.%20Saya%20nak%20tanya%20lagi.', '_blank');
 }
 
 // Function to actually open openreview after accepting warnings
@@ -3933,27 +3932,59 @@ function testinstall() {
 
 // Function to close FAQ Modal
 function closeFAQModal() {
-    document.getElementById('faq-modal').classList.remove('active');
+    const faqModal = document.getElementById('faq-modal');
+    faqModal.classList.remove('active');
+    faqModal.style.display = 'none';
+    document.body.style.overflow = 'auto';
 }
 
 // Function to scroll to FAQ section
 function scrollToFAQ() {
+    // Close the FAQ modal first
     closeFAQModal();
     
+    // Remove any overlay/backdrop that might block scrolling
+    const faqModal = document.getElementById('faq-modal');
+    faqModal.classList.remove('active');
+    faqModal.style.display = 'none';
+    
+    // Allow body scroll again
+    document.body.style.overflow = 'auto';
+    
+    // Use longer delay to ensure modal is fully gone
     setTimeout(() => {
         const faqSection = document.getElementById('faq');
-        faqSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
         
-        faqSection.classList.add('highlighted');
-        setTimeout(() => {
-            faqSection.classList.remove('highlighted');
-        }, 3000);
-        
-        fbq('track', 'ViewContent', {
-            content_name: 'FAQ Section',
-            content_category: 'User Engagement'
-        });
-    }, 300);
+        if (faqSection) {
+            // Method 1: scrollIntoView
+            faqSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            
+            // Method 2: Fallback manual scroll after a short delay
+            setTimeout(() => {
+                const rect = faqSection.getBoundingClientRect();
+                // If FAQ is not visible in viewport, force scroll manually
+                if (rect.top > window.innerHeight || rect.top < -100) {
+                    const offsetPosition = faqSection.offsetTop - 80;
+                    window.scrollTo({
+                        top: offsetPosition,
+                        behavior: 'smooth'
+                    });
+                }
+            }, 600);
+            
+            // Highlight the FAQ section
+            faqSection.classList.add('highlighted');
+            setTimeout(() => {
+                faqSection.classList.remove('highlighted');
+            }, 3000);
+            
+            // Track with Meta Pixel
+            fbq('track', 'ViewContent', {
+                content_name: 'FAQ Section',
+                content_category: 'User Engagement'
+            });
+        }
+    }, 500); // Increased from 300ms to 500ms
 }
 
 // Update WhatsApp Button State based on FAQ visit
@@ -3962,25 +3993,19 @@ function updateWhatsAppButton() {
     const proceedButton = document.getElementById('proceed-whatsapp');
     
     if (hasVisitedFAQ) {
-        // If FAQ visited:
-        // 1. Change button text to indicate they are ready (optional, or keep as WS icon)
-        // 2. When clicked, it will trigger showFinalWarningModal() instead of showFAQModal()
-        
-        // Update the button inside the FAQ modal to point to the Warning Modal
         proceedButton.disabled = false;
         proceedButton.textContent = 'Saya Dah Baca FAQ';
-        proceedButton.classList.remove('btn-secondary'); // Make it primary color
+        proceedButton.classList.remove('btn-secondary');
         proceedButton.onclick = function() {
             closeFAQModal();
             showFinalWarningModal();
         };
         
     } else {
-        // If FAQ not visited:
         whatsappButton.classList.remove('visited-faq');
         proceedButton.disabled = true;
         proceedButton.textContent = 'Sila Baca FAQ Dulu';
-        proceedButton.classList.add('btn-secondary'); // Make it secondary/disabled color
+        proceedButton.classList.add('btn-secondary');
         proceedButton.onclick = null;
     }
 }
@@ -4101,4 +4126,3 @@ document.addEventListener('DOMContentLoaded', function() {
     </script>
 </body>
 </html>
-
