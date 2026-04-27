@@ -1072,75 +1072,7 @@ src="https://www.facebook.com/tr?id=2276519576162204&ev=PageView&noscript=1"
     100% { box-shadow: 0 0 20px rgba(249, 199, 79, 0.3); }
 }
 
-/* WhatsApp Button State */
-.whatsapp-button-left.visited-faq {
-    background-color: #25D366;
-    animation: none;
-}
 
-.whatsapp-button-left.visited-faq::after {
-    content: '✓';
-    position: absolute;
-    top: -5px;
-    right: -5px;
-    background-color: var(--secondary-color);
-    color: white;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-}
-
-/* Add these styles to your CSS */
-.faq-progress {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 5px;
-    background-color: rgba(0, 0, 0, 0.3);
-    z-index: 1000;
-    display: none;
-}
-
-.faq-progress.visible {
-    display: block;
-}
-
-.progress-bar {
-    height: 100%;
-    width: 100%;
-    background-color: rgba(255, 255, 255, 0.2);
-}
-
-.progress-fill {
-    height: 100%;
-    width: 0%;
-    background-color: var(--primary-color);
-    transition: width 0.3s ease;
-}
-
-.progress-text {
-    position: absolute;
-    top: 10px;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: var(--surface-color);
-    color: var(--text-color);
-    padding: 5px 15px;
-    border-radius: 20px;
-    font-size: 0.8rem;
-    white-space: nowrap;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.faq-progress.visible .progress-text {
-    opacity: 1;
-}
 
         /* FAQ - Collapsible */
         .faq { background-color: var(--surface-color); }
@@ -2599,12 +2531,6 @@ src="https://www.facebook.com/tr?id=2276519576162204&ev=PageView&noscript=1"
     </div>
 </section>
 
-<!-- Add this right after the opening body tag -->
-<div id="faq-progress" class="faq-progress">
-    <div class="progress-bar">
-        <div class="progress-fill"></div>
-    </div>
-</div>
 
         <!-- FAQ SECTION -->
         <section id="faq" class="faq">
@@ -2860,7 +2786,7 @@ src="https://www.facebook.com/tr?id=2276519576162204&ev=PageView&noscript=1"
         </div>
         <div class="faq-modal-footer">
             <button class="btn btn-secondary" onclick="scrollToFAQ()">Baca Q&A Dulu</button>
-            <button class="btn" id="proceed-whatsapp" disabled>Saya Dah Baca FAQ</button>
+            <a id="proceed-whatsapp" href="https://wa.me/60172703949?text=Hi%2C%20saya%20nak%20tanya%20tentang%20PROSTREAM%20%3A" target="_blank" class="btn" style="background-color: #25D366; text-decoration: none;">💬 Contact Admin</a>
         </div>
     </div>
 </div>
@@ -2886,7 +2812,35 @@ src="https://www.facebook.com/tr?id=2276519576162204&ev=PageView&noscript=1"
         <p style="margin-bottom: 20px;">Sila pastikan anda telah membaca Q&A di atas sebelum menghubungi kami untuk menjimatkan masa.</p>
         
         <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-            <a id="whatsapp-final-btn" href="https://wa.me/60172703949?text=Hi%2C%20saya%20dah%20baca%20FAQ(Q&A).%20Saya%20ada%20soalan%20lain%20:." target="_blank" class="btn" style="background-color: #25D366; text-decoration: none; padding: 10px 20px;">💬 Contact WhatsApp</a>
+            <a id="whatsapp-final-btn" href="https://wa.me/60172703949?text=Hi%2C%20saya%20dah%20baca%20faq%28Q%26A%29.%20Saya%20ada%20soalan%20lain%20:." target="_blank" class="btn" style="background-color: #25D366; text-decoration: none; padding: 10px 20px;">💬 Contact WhatsApp</a>
+            <button class="btn" onclick="openreview()" style="padding: 10px 20px;">Lihat Feedback/Review</button>
+            <button class="btn" onclick="testinstall()" style="padding: 10px 20px;">Test Install</button>
+        </div>
+    </div>
+</div>
+
+<!-- Final Warning Modal (Shown after user has visited FAQ) -->
+<div id="final-warning-modal" class="modal">
+    <div class="modal-content" style="border-top: 5px solid #f94144;">
+        <span class="modal-close" onclick="closeFinalWarning()">&times;</span>
+        <h3 style="color: #f94144;">⚠️ Pastikan dan baca semua Q&A sebelum contact Whatsapp</h3>
+        
+        <div style="text-align: left; background: rgba(249, 65, 68, 0.1); padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+            <p style="color: var(--text-color); margin-bottom: 10px;"><strong>Details</strong></p>
+            <ul style="list-style: none; padding: 0; margin: 0;">
+                <li style="margin-bottom: 8px; color: var(--text-color);">
+                    ⚠️ <strong>HARGA?:</strong> Sekarang tengah promosi <strong>RM 34.90 SAHAJA </strong> (Seumur Hidup)
+                </li>
+                <li style="margin-bottom: 8px; color: var(--text-color);">
+                    ⚠️ <strong>SMART TV TAK SUPPORT:</strong> SAMSUNG,HISENSE,VIDA OS, WebOS, TizenOS. <strong>HANYA untuk ANDROID dan GOOGLE TV SAHAJA</strong>
+                </li>
+            </ul>
+        </div>
+
+        <p style="margin-bottom: 20px;">Sila pastikan anda telah membaca Q&A di atas sebelum menghubungi kami untuk menjimatkan masa.</p>
+        
+        <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+            <a id="whatsapp-final-btn" href="https://wa.me/60172703949?text=Hi%2C%20saya%20dah%20baca%20FAQ(Q&A).%20Saya%20ada%20soalan%20lain%20%3A." target="_blank" class="btn" style="background-color: #25D366; text-decoration: none; padding: 10px 20px;">💬 Contact WhatsApp</a>
             <button class="btn" onclick="openreview()" style="padding: 10px 20px;">Lihat Feedback/Review</button>
             <button class="btn" onclick="testinstall()" style="padding: 10px 20px;">Test Install</button>
         </div>
@@ -3868,67 +3822,115 @@ function updateWhatsAppButton() {
 
 
 // ==========================================
-//      UPDATED WHATSAPP & FAQ LOGIC
+//      WHATSAPP & FAQ LOGIC
 // ==========================================
 
-// Track if user has visited FAQ
 let hasVisitedFAQ = false;
 
-// Function to show FAQ Modal (Triggered when button is clicked initially)
+// First click: Show FAQ Modal with direct Contact Admin
 function showFAQModal(event) {
     event.preventDefault();
     
-    // If user has already visited FAQ, skip to the NEW Warning Layer
+    // If user already visited FAQ, show Final Warning instead
     if (hasVisitedFAQ) {
         showFinalWarningModal();
         return;
     }
     
-    // If not, show the FAQ Modal
-    document.getElementById('faq-modal').classList.add('active');
+    // Show FAQ Modal
+    const faqModal = document.getElementById('faq-modal');
+    faqModal.style.display = 'flex';
+    faqModal.classList.add('active');
     
-    // Track modal view
     fbq('track', 'ViewContent', {
         content_name: 'FAQ Modal',
         content_category: 'User Engagement'
     });
 }
 
-// Function to show the NEW Final Warning Modal (Layer 2)
+// Close FAQ Modal
+function closeFAQModal() {
+    const faqModal = document.getElementById('faq-modal');
+    faqModal.classList.remove('active');
+    faqModal.style.display = 'none';
+    document.body.style.overflow = 'auto';
+}
+
+// Scroll to FAQ section
+function scrollToFAQ() {
+    closeFAQModal();
+    
+    setTimeout(() => {
+        const faqSection = document.getElementById('faq');
+        
+        if (faqSection) {
+            faqSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            
+            setTimeout(() => {
+                const rect = faqSection.getBoundingClientRect();
+                if (rect.top > window.innerHeight || rect.top < -100) {
+                    const offsetPosition = faqSection.offsetTop - 80;
+                    window.scrollTo({
+                        top: offsetPosition,
+                        behavior: 'smooth'
+                    });
+                }
+            }, 600);
+            
+            faqSection.classList.add('highlighted');
+            setTimeout(() => {
+                faqSection.classList.remove('highlighted');
+            }, 3000);
+            
+            fbq('track', 'ViewContent', {
+                content_name: 'FAQ Section',
+                content_category: 'User Engagement'
+            });
+        }
+    }, 500);
+}
+
+// Show Final Warning Modal (second popup after FAQ visited)
 function showFinalWarningModal() {
     document.getElementById('final-warning-modal').style.display = 'flex';
     
-    // Track warning view
     fbq('track', 'ViewContent', {
         content_name: 'Price Warning Modal',
         content_category: 'User Engagement'
     });
 }
 
-// Function to close Final Warning Modal
+// Close Final Warning Modal
 function closeFinalWarning() {
     document.getElementById('final-warning-modal').style.display = 'none';
 }
 
-// Function to actually open WhatsApp after accepting warnings
-function confirmFinalWhatsApp() {
-    closeFinalWarning();
-    window.open('https://wa.me/60172703949?text=Hi%2C%20saya%20dah%20baca%20FAQ%20dan%20faham%20syaratnya.%20Saya%20nak%20tanya%20lagi.', '_blank');
-}
-
-// Function to actually open openreview after accepting warnings
+// Open review page
 function openreview() {
     closeFinalWarning();
-    // Open WhatsApp
     window.open('https://prostreammy.vercel.app/review.html');
 }
 
-// Function to actually open testinstall after accepting warnings
+// Open test install page
 function testinstall() {
     closeFinalWarning();
-    // Open WhatsApp
     window.open('https://prostreammy.vercel.app/testinstall.html');
 }
+
+// Track when user scrolls to FAQ section
+window.addEventListener('scroll', function() {
+    if (hasVisitedFAQ) return;
+    
+    const faqSection = document.getElementById('faq');
+    if (!faqSection) return;
+    
+    const rect = faqSection.getBoundingClientRect();
+    
+    // Check if FAQ section is in viewport
+    if (rect.top <= window.innerHeight && rect.bottom >= 0) {
+        hasVisitedFAQ = true;
+    }
+});
 
 // Function to close FAQ Modal
 function closeFAQModal() {
@@ -4004,7 +4006,7 @@ function updateWhatsAppButton() {
     } else {
         whatsappButton.classList.remove('visited-faq');
         proceedButton.disabled = true;
-        proceedButton.textContent = 'Sila Baca FAQ Dulu';
+        proceedButton.textContent = 'Contact Whatsapp';
         proceedButton.classList.add('btn-secondary');
         proceedButton.onclick = null;
     }
