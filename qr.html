@@ -582,6 +582,8 @@
         //      CONFIGURATION
         // ====================================
         const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwoSrlYQew7kuo75fbJtjy-Z019Z4q5pTo8wDBoRqGUSmJE-PvsgpTepoy6jYFoqTh4oA/exec';
+        
+        // WARNING: Make sure this key is valid and active in your OpenRouter dashboard!
         const OPENROUTER_API_KEY = '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';
 
         function getUrlParameter(name) {
@@ -796,20 +798,18 @@
         }
 
         // ====================================
-        //      AI OCR VERIFICATION (With Retry Logic)
-        // ====================================
-        async function verifyReceipt(base64DataUrl, expectedAmount) {
+        //      AI OCR VERIFICATION (Qwen Vision Model + Retry)
+        // ==================================== 
+                async function verifyReceipt(base64DataUrl, expectedAmount) {
             const MAX_ATTEMPTS = 3;
             let lastError = null;
 
             for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
                 try {
-                    // Show loading state with attempt number if retrying
                     if (attempt === 1) {
                         showLoading('AI sedang menyemak resit anda...');
                     } else {
                         showLoading(`Sistem sibuk, mencuba semula... (${attempt}/${MAX_ATTEMPTS})`);
-                        // Wait 2 seconds before retrying to let API rate limit reset
                         await new Promise(resolve => setTimeout(resolve, 2000)); 
                     }
 
@@ -825,7 +825,7 @@ Strict rules:
 
 Respond strictly with only one word:
 - "VERIFIED" if the conditions are met
-- "FAILED" if they are not.`;
+- "FAILED" if they are not`;
 
                     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
                         method: "POST",
@@ -834,7 +834,7 @@ Respond strictly with only one word:
                             "Content-Type": "application/json"
                         },
                         body: JSON.stringify({
-                            model: "baidu/qianfan-ocr-fast:free",
+                            model: "openrouter/free", // UPDATED MODEL
                             messages: [
                                 {
                                     role: "user",
@@ -851,18 +851,15 @@ Respond strictly with only one word:
                         const errorData = await response.json().catch(() => ({}));
                         const errorMessage = errorData.error?.message || `HTTP error ${response.status}`;
                         
-                        // If it's a rate limit (429) or server error (5xx), we should retry
                         if (response.status === 429 || response.status >= 500) {
                             lastError = new Error(errorMessage);
                             console.warn(`Attempt ${attempt} failed: ${errorMessage}. Retrying...`);
-                            continue; // Move to the next attempt
+                            continue; 
                         } else {
-                            // For other errors (e.g., 400 Bad Request, 401 Unauthorized), don't retry, throw immediately
                             throw new Error(errorMessage);
                         }
                     }
 
-                    // If response is OK, parse the AI result
                     const result = await response.json();
                     const aiMessage = result.choices[0].message.content.toLowerCase().trim();
                     
@@ -870,7 +867,6 @@ Respond strictly with only one word:
 
                     const verified = aiMessage.includes('verified');
 
-                    // If successful, return the result immediately
                     return {
                         verified: verified,
                         extractedText: aiMessage,
@@ -880,12 +876,10 @@ Respond strictly with only one word:
                 } catch (error) {
                     console.error(`Error during AI verification (Attempt ${attempt}):`, error);
                     lastError = error;
-                    // If it's a network error or thrown exception, continue to retry
                     if (attempt < MAX_ATTEMPTS) continue;
                 }
             }
 
-            // If the loop finishes and we haven't returned, all attempts failed
             console.error('All AI verification attempts failed.', lastError);
             return {
                 verified: false,
@@ -1138,12 +1132,10 @@ Respond strictly with only one word:
                         showLoading('Memampatkan gambar...');
                         const compressedBase64 = await compressImageToBase64(originalFile, 1000, 0.6);
                         
-                        // verifyReceipt now handles its own retry logic and loading text
                         const verificationResult = await verifyReceipt(compressedBase64, orderData.amount);
                         
-                        hideLoading(); // Hide loading once all attempts are done or verified
+                        hideLoading(); 
 
-                        // If the AI successfully read it but said FAILED
                         if (!verificationResult.error) {
                             showVerificationModal(verificationResult.verified);
                             
@@ -1154,9 +1146,8 @@ Respond strictly with only one word:
                                 }
                             } 
                         } else {
-                            // If all 3 attempts failed due to API errors (429 Too Many Requests)
                             showNotification('Sistem sibuk. Pengesahan automatik gagal.', 'error');
-                            showVerificationModal(false); // Show the manual fallback modal
+                            showVerificationModal(false); 
                         }
                         
                     } catch (error) {
