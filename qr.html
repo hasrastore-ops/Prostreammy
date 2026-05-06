@@ -204,6 +204,22 @@
             background-color: rgba(249, 199, 79, 0.1);
         }
 
+        /* Receipt Preview Styles */
+        .receipt-preview-container {
+            margin-top: 15px;
+            text-align: center;
+            display: none;
+        }
+        .receipt-preview-container.active {
+            display: block;
+        }
+        .receipt-preview {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 8px;
+            border: 1px solid var(--text-muted);
+        }
+
         .btn {
             display: inline-block;
             padding: 15px 25px;
@@ -226,6 +242,7 @@
         .btn:active { transform: translateY(0); }
         .btn-secondary { background-color: var(--text-muted); color: var(--bg-color); }
         .btn-success { background-color: var(--success-color); color: white; }
+        .btn-warning { background-color: #ff9800; color: white; }
 
         .button-container { display: flex; justify-content: space-between; margin-top: 30px; gap: 10px; }
 
@@ -259,6 +276,7 @@
             opacity: 0;
             visibility: hidden;
             transition: opacity 0.3s ease;
+            flex-direction: column;
         }
 
         .loading-overlay.active { opacity: 1; visibility: visible; }
@@ -310,7 +328,7 @@
         .verification-icon { font-size: 4rem; margin-bottom: 20px; }
         .verification-title { color: var(--primary-color); font-size: 1.5rem; font-weight: 700; margin-bottom: 15px; }
         .verification-message { margin-bottom: 25px; font-size: 1rem; }
-        .verification-actions { display: flex; gap: 10px; justify-content: center; }
+        .verification-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
 
         .verification-failed { display: none; }
         .verification-failed.active { display: block; }
@@ -467,6 +485,10 @@
                                     Klik untuk memilih gambar resit
                                 </label>
                             </div>
+                            <!-- Image Preview Added Here -->
+                            <div id="receipt-preview-container" class="receipt-preview-container">
+                                <img id="receipt-preview" class="receipt-preview" src="" alt="Receipt Preview">
+                            </div>
                         </div>
                     </form>
                 </div>
@@ -485,7 +507,7 @@
     <div id="loading-overlay" class="loading-overlay">
         <div>
             <div class="loading-spinner"></div>
-            <div class="loading-text">Sedang memproses pembayaran anda...</div>
+            <div class="loading-text" id="loading-text">Sedang memproses pembayaran anda...</div>
         </div>
     </div>
 
@@ -502,13 +524,13 @@
                 </div>
             </div>
             
-            <!-- Verification Failed -->
+            <!-- Verification Failed (Soft Fail Updated) -->
             <div class="verification-failed" id="verification-failed">
                 <div class="verification-icon">✗</div>
-                <h3 class="verification-title">Pengesahan Gagal</h3>
-                <p class="verification-message">Kami tidak dapat mengesahkan pembayaran anda. Sila hubungi admin untuk bantuan.</p>
+                <h3 class="verification-title">Pengesahan Automatik Gagal</h3>
+                <p class="verification-message">Sistem tidak dapat mengesan maklumat resit dengan jelas. Ini mungkin disebabkan kualiti gambar. Sila hubungi admin untuk pengesahan manual.</p>
                 <div class="verification-actions">
-                    <button class="btn btn-whatsapp" id="contact-admin-whatsapp">Hubungi Admin</button>
+                    <button class="btn btn-warning" id="manual-review-proceed" style="background-color: var(--whatsapp-color); color: white;">Hantar Manual ke WhatsApp</button>
                     <button class="btn btn-secondary" id="try-again">Cuba Lagi</button>
                 </div>
             </div>
@@ -585,6 +607,8 @@
         // ====================================
         const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwoSrlYQew7kuo75fbJtjy-Z019Z4q5pTo8wDBoRqGUSmJE-PvsgpTepoy6jYFoqTh4oA/exec';
         
+        let tesseractWorker = null; // Global worker to preload
+
         // Helper: Get URL parameter
         function getUrlParameter(name) {
             name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
@@ -592,6 +616,43 @@
             var results = regex.exec(location.search);
             return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
         }   
+
+        // ====================================
+        //      IMAGE COMPRESSION HELPER
+        // ====================================
+        function compressImage(file, maxWidth, quality) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+
+                        // Resize if wider than maxWidth
+                        if (width > maxWidth) {
+                            height *= maxWidth / width;
+                            width = maxWidth;
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        // Convert to compressed Blob
+                        canvas.toBlob((blob) => {
+                            resolve(blob);
+                        }, 'image/jpeg', quality);
+                    };
+                    img.onerror = reject;
+                    img.src = event.target.result;
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
 
         // ====================================
         //      GOOGLE SHEETS INTEGRATION
@@ -606,7 +667,6 @@
                 formData.append('package', 'PROSTREAM 4 App Power Package');
                 formData.append('paymentMethod', 'QR');
                 formData.append('amount', orderData.amount);
-                // Referral code removed
                 
                 const response = await fetch(GOOGLE_SCRIPT_URL, {
                     method: 'POST',
@@ -629,12 +689,21 @@
             }
         }
 
-        async function updatePaymentStatusInGoogleSheets(orderId) {
+        async function updatePaymentStatusInGoogleSheets(orderId, isManualReview = false) {
             try {
+                const params = new URLSearchParams({
+                    action: 'updatePayment',
+                    orderId: orderId
+                });
+                
+                if (isManualReview) {
+                    params.append('status', 'Manual Review Needed');
+                }
+
                 const response = await fetch(GOOGLE_SCRIPT_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: new URLSearchParams({ action: 'updatePayment', orderId: orderId })
+                    body: params
                 });
                 
                 const result = await response.json();
@@ -675,7 +744,6 @@
                 
                 localStorage.setItem('prostreamQRPaymentData', JSON.stringify(orderData));
                 
-                // Register order if not already registered
                 if (!orderId) {
                     console.log('Registering new order in Google Sheets...');
                     const newOrderId = await registerOrderInGoogleSheets(orderData);
@@ -724,7 +792,8 @@
             }, 3000);
         }
 
-        function showLoading() {
+        function showLoading(text = 'Sedang memproses pembayaran anda...') {
+            document.getElementById('loading-text').textContent = text;
             document.getElementById('loading-overlay').classList.add('active');
             document.body.style.overflow = 'hidden';
         }
@@ -756,44 +825,58 @@
         }
 
         // ====================================
-        //      OCR VERIFICATION
+        //      FUZZY OCR VERIFICATION
         // ====================================
-        async function verifyReceipt(imageFile) {
+        async function verifyReceipt(imageBlob, expectedAmount) {
             try {
-                showLoading();
-                document.querySelector('.loading-text').textContent = 'Mengesahkan resit pembayaran...';
+                showLoading('Menyediakan sistem pengesahan...');
                 
-                const result = await Tesseract.recognize(
-                    imageFile,
-                    'eng+msa', // English and Malay languages
-                    { logger: m => console.log(m) }
-                );
+                // Initialize worker if not already done
+                if (!tesseractWorker) {
+                    tesseractWorker = await Tesseract.createWorker('eng+msa', 1, {
+                        logger: m => {
+                            if (m.status === 'recognizing text') {
+                                const progress = Math.round(m.progress * 100);
+                                showLoading(`Mengesahkan resit... ${progress}%`);
+                            }
+                        }
+                    });
+                }
+
+                showLoading('Memproses gambar resit...');
                 
+                const result = await tesseractWorker.recognize(imageBlob);
                 const extractedText = result.data.text.toLowerCase();
-                console.log('Extracted Text:', extractedText);
                 
-                // Check for verification criteria - UPDATED RULES
-                const nameMatch = extractedText.includes('hasrastore') || 
-                                 extractedText.includes('hasrasstore') || 
-                                 extractedText.includes('hasrastore');
-                
-                const statusMatch = extractedText.includes('successful') || 
-                                   extractedText.includes('paid') ||
-                                   extractedText.includes('QR') || 
-                                   extractedText.includes('success');
-                
-                // Check for amount variations
-                const amountMatch = extractedText.includes('34.90') || 
-                                   extractedText.includes('35.00') || 
-                                   extractedText.includes('35') || 
-                                   extractedText.includes('34');
+                console.log('--- OCR Extracted Text ---');
+                console.log(extractedText);
+                console.log('--------------------------');
+
+                // 1. Fuzzy Name Match (Looking for "hasra")
+                const nameMatch = /hasra/i.test(extractedText);
+
+                // 2. Fuzzy Status Match
+                const statusMatch = /success|paid|berjaya|selesai/i.test(extractedText);
+
+                // 3. Fuzzy Amount Match
+                const expectedBaseAmount = Math.floor(parseFloat(expectedAmount));
+                const amountRegex = new RegExp(`${expectedBaseAmount}[\\.,\\s]?\\d{0,2}`);
+                const amountMatch = amountRegex.test(extractedText);
+
+                console.log({
+                    nameFound: nameMatch,
+                    statusFound: statusMatch,
+                    amountFound: amountMatch,
+                    expectedBaseAmount: expectedBaseAmount
+                });
                 
                 return {
                     verified: nameMatch && amountMatch,
                     extractedText: extractedText,
                     details: {
                         nameFound: nameMatch,
-                        amountFound: amountMatch
+                        amountFound: amountMatch,
+                        statusFound: statusMatch
                     }
                 };
             } catch (error) {
@@ -955,33 +1038,77 @@
             if (proofImageInput) {
                 proofImageInput.addEventListener('change', function() {
                     const fileLabel = document.getElementById('file-label');
+                    const previewContainer = document.getElementById('receipt-preview-container');
+                    const previewImage = document.getElementById('receipt-preview');
+
                     if (this.files && this.files[0]) {
-                        fileLabel.textContent = this.files[0].name;
+                        const file = this.files[0];
+                        fileLabel.textContent = file.name;
                         fileLabel.classList.add('has-file');
+                        
+                        // Display Image Preview
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            previewImage.src = e.target.result;
+                            previewContainer.classList.add('active');
+                        };
+                        reader.readAsDataURL(file);
                     } else {
                         fileLabel.textContent = 'Klik untuk memilih gambar resit';
                         fileLabel.classList.remove('has-file');
+                        previewContainer.classList.remove('active');
+                        previewImage.src = '';
                     }
                 });
             }
 
+            // Handle Proceed to Success Page Logic
+            function proceedToSuccess() {
+                hideVerificationModal();
+                
+                const pendingOrder = {
+                    billNo: orderData.orderId || `QR_${orderData.phone}_${Date.now()}`,
+                    billExternalReferenceNo: orderData.orderId,
+                    orderId: orderData.orderId,
+                    orderData: {
+                        customerName: orderData.name,
+                        customerEmail: orderData.email,
+                        customerPhone: orderData.phone,
+                        product: 'PROSTREAM 4 App Power Package',
+                        total: parseFloat(orderData.amount)
+                    },
+                    totalAmount: parseFloat(orderData.amount),
+                    timestamp: new Date().toISOString()
+                };
+                
+                localStorage.setItem('pendingOrder', JSON.stringify(pendingOrder));
+                localStorage.removeItem('prostreamQRPaymentData');
+                localStorage.removeItem('prostreamQRPaymentStep');
+                
+                window.location.href = 'payment-successful.html';
+            }
+
             const continueToSuccessBtn = document.getElementById('continue-to-success');
             if (continueToSuccessBtn) {
-                continueToSuccessBtn.addEventListener('click', function() {
+                continueToSuccessBtn.addEventListener('click', () => proceedToSuccess());
+            }
+
+            // UPDATED: Manual review now goes directly to WhatsApp
+            const manualReviewBtn = document.getElementById('manual-review-proceed');
+            if (manualReviewBtn) {
+                manualReviewBtn.addEventListener('click', async function() {
+                    if (orderData.orderId) {
+                        await updatePaymentStatusInGoogleSheets(orderData.orderId, true);
+                    }
                     hideVerificationModal();
-                    window.location.href = 'payment-successful.html';
+                    const phoneNumber = '60172703949';
+                    const message = encodeURIComponent(`Hai admin, pengesahan automatik resit saya gagal. Berikut adalah butiran dan resit saya untuk pengesahan manual.\n\nNama: ${orderData.name}\nEmail: ${orderData.email}\nNo. Telefon: ${orderData.phone}\nJumlah: RM ${orderData.amount}`);
+                    window.open(`https://wa.me/${phoneNumber}?text=${message}`, '_blank');
                 });
             }
 
             const contactAdminBtn = document.getElementById('contact-admin-whatsapp');
-            if (contactAdminBtn) {
-                contactAdminBtn.addEventListener('click', function() {
-                    hideVerificationModal();
-                    const phoneNumber = '60172703949';
-                    const message = encodeURIComponent(`Saya mempunyai masalah dengan pengesahan pembayaran. Nama: ${orderData.name}, Email: ${orderData.email}, No. Telefon: ${orderData.phone}`);
-                    window.open(`https://wa.me/${phoneNumber}?text=${message}`, '_blank');
-                });
-            }
+            // Removed the Contact Admin button logic since the Manual Review button does exactly this now, streamlining the UI.
 
             const tryAgainBtn = document.getElementById('try-again');
             if (tryAgainBtn) {
@@ -990,10 +1117,12 @@
                     document.getElementById('proof-image').value = '';
                     document.getElementById('file-label').textContent = 'Klik untuk memilih gambar resit';
                     document.getElementById('file-label').classList.remove('has-file');
+                    document.getElementById('receipt-preview-container').classList.remove('active');
+                    document.getElementById('receipt-preview').src = '';
                 });
             }
 
-                        const submitPaymentBtn = document.getElementById('submit-payment');
+            const submitPaymentBtn = document.getElementById('submit-payment');
             if (submitPaymentBtn) {
                 submitPaymentBtn.addEventListener('click', async function() {
                     const fileInput = document.getElementById('proof-image');
@@ -1003,57 +1132,37 @@
                         return;
                     }
 
-                    if (fileInput.files[0].size > 5 * 1024 * 1024) {
-                        showNotification('Saiz gambar terlalu besar. Sila pilih gambar kurang dari 5MB.', 'error');
+                    const originalFile = fileInput.files[0];
+
+                    if (originalFile.size > 10 * 1024 * 1024) {
+                        showNotification('Saiz gambar terlalu besar. Sila pilih gambar kurang dari 10MB.', 'error');
                         return;
                     }
 
-                    const verificationResult = await verifyReceipt(fileInput.files[0]);
-                    
-                    if (verificationResult.error) {
-                        showNotification('Ralat semasa mengesahkan resit. Sila cuba lagi.', 'error');
-                        return;
-                    }
-
-                    // Verification Passed - Proceed
-                    showVerificationModal(verificationResult.verified);
-                    
-                    if (verificationResult.verified) {
-                        // 1. Update Google Sheets
-                        if (orderData.orderId) {
-                            console.log('Updating payment status in Google Sheets...');
-                            await updatePaymentStatusInGoogleSheets(orderData.orderId);
+                    try {
+                        showLoading('Memampatkan gambar...');
+                        const compressedBlob = await compressImage(originalFile, 1000, 0.6);
+                        
+                        const verificationResult = await verifyReceipt(compressedBlob, orderData.amount);
+                        
+                        if (verificationResult.error) {
+                            showNotification('Ralat semasa mengesahkan resit. Sila cuba lagi.', 'error');
+                            return;
                         }
+
+                        showVerificationModal(verificationResult.verified);
                         
-                        // 2. PREPARE DATA FOR payment-successful.html
-                        // This ensures the success page has the data to fire the API
-                        const pendingOrder = {
-                            billNo: orderData.orderId || `QR_${orderData.phone}_${Date.now()}`, // Crucial: Unique BillNo
-                            billExternalReferenceNo: orderData.orderId,
-                            orderId: orderData.orderId,
-                            orderData: {
-                                customerName: orderData.name,
-                                customerEmail: orderData.email,
-                                customerPhone: orderData.phone,
-                                product: 'PROSTREAM 4 App Power Package',
-                                total: parseFloat(orderData.amount)
-                            },
-                            totalAmount: parseFloat(orderData.amount),
-                            timestamp: new Date().toISOString()
-                        };
+                        if (verificationResult.verified) {
+                            if (orderData.orderId) {
+                                console.log('Updating payment status in Google Sheets...');
+                                await updatePaymentStatusInGoogleSheets(orderData.orderId, false);
+                            }
+                        } 
                         
-                        // 3. SAVE TO LOCALSTORAGE
-                        localStorage.setItem('pendingOrder', JSON.stringify(pendingOrder));
-                        
-                        // 4. CLEANUP QR SPECIFIC STORAGE
-                        localStorage.removeItem('prostreamQRPaymentData');
-                        localStorage.removeItem('prostreamQRPaymentStep');
-                        
-                        // 5. REDIRECT
-                        // The redirection to payment-successful.html will trigger the API/Pixel firing there.
-                        console.log('Redirecting to payment-successful.html...');
-                        // Note: The redirect happens when user clicks the modal button, 
-                        // but the order data is now ready.
+                    } catch (error) {
+                        console.error('Submission Process Error:', error);
+                        hideLoading();
+                        showNotification('Sistem gagal memproses. Sila cuba lagi.', 'error');
                     }
                 });
             }
