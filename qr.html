@@ -8,6 +8,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;900&display=swap" rel="stylesheet">
     
+    <!-- Tesseract.js untuk OCR di sisi klien -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    
     <style>
         :root {
             --primary-color: #f9c74f;
@@ -293,6 +296,27 @@
             max-width: 80%;
         }
 
+        .loading-subtext {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-top: 8px;
+            text-align: center;
+            max-width: 80%;
+        }
+
+        /* Verification method badge */
+        .verification-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+        .badge-ocr { background-color: rgba(76, 175, 80, 0.2); color: var(--success-color); border: 1px solid var(--success-color); }
+        .badge-ai { background-color: rgba(249, 199, 79, 0.2); color: var(--primary-color); border: 1px solid var(--primary-color); }
+        .badge-failed { background-color: rgba(249, 65, 68, 0.2); color: var(--secondary-color); border: 1px solid var(--secondary-color); }
+
         .verification-modal {
             position: fixed;
             top: 0; left: 0;
@@ -383,6 +407,43 @@
         .step-text h3 { color: var(--primary-color); margin-bottom: 5px; font-size: 1.1rem; }
         .step-text p { color: var(--text-color); font-size: 0.9rem; }
         .instructions-footer { margin-top: 20px; text-align: center; }
+
+        /* OCR Debug Panel (hidden by default, toggle with ?debug=1) */
+        .ocr-debug-panel {
+            display: none;
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            background-color: rgba(21, 25, 50, 0.98);
+            border-top: 2px solid var(--primary-color);
+            padding: 15px;
+            z-index: 5000;
+            max-height: 40vh;
+            overflow-y: auto;
+            font-size: 0.8rem;
+        }
+        .ocr-debug-panel.active { display: block; }
+        .ocr-debug-panel h4 { color: var(--primary-color); margin-bottom: 10px; }
+        .ocr-debug-panel pre {
+            background-color: var(--bg-color);
+            padding: 10px;
+            border-radius: 8px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+            color: var(--success-color);
+            font-size: 0.75rem;
+        }
+        .ocr-debug-panel .debug-close {
+            position: absolute;
+            top: 10px; right: 10px;
+            background: var(--secondary-color);
+            border: none;
+            color: white;
+            width: 24px; height: 24px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
     </style>
 </head>
 <body>
@@ -493,12 +554,14 @@
         <div>
             <div class="loading-spinner"></div>
             <div class="loading-text" id="loading-text">Sedang memproses pembayaran anda...</div>
+            <div class="loading-subtext" id="loading-subtext">Sila tunggu</div>
         </div>
     </div>
 
     <div id="verification-modal" class="verification-modal">
         <div class="verification-content">
             <div class="verification-success" id="verification-success">
+                <span class="verification-badge badge-ocr" id="success-badge">OCR</span>
                 <div class="verification-icon">✓</div>
                 <h3 class="verification-title">Pembayaran di Sahkan</h3>
                 <p class="verification-message">Resit pembayaran anda telah disahkan. Terima kasih!</p>
@@ -508,9 +571,10 @@
             </div>
             
             <div class="verification-failed" id="verification-failed">
+                <span class="verification-badge badge-failed" id="failed-badge">GAGAL</span>
                 <div class="verification-icon">✗</div>
-                <h3 class="verification-title">Pengesahan Automatik Gagal</h3>
-                <p class="verification-message">Sistem tidak dapat mengesan maklumat resit dengan jelas. Ini mungkin disebabkan kualiti gambar. Sila hubungi admin untuk pengesahan manual.</p>
+                <h3 class="verification-title">Pengesahan Gagal</h3>
+                <p class="verification-message" id="failed-message">Sistem tidak dapat mengesan maklumat resit dengan jelas. Sila hubungi admin untuk pengesahan manual.</p>
                 <div class="verification-actions">
                     <button class="btn btn-warning" id="manual-review-proceed" style="background-color: var(--whatsapp-color); color: white;">Hantar Manual ke WhatsApp</button>
                     <button class="btn btn-secondary" id="try-again">Cuba Lagi</button>
@@ -522,7 +586,7 @@
     <div id="instructions-modal" class="instructions-modal">
         <div class="instructions-content">
             <div class="instructions-header">
-                <h2 class="instructions-title">Panduan Pembayaran QR- Sila ikut untuk Memastikan ID dapat Diberikan</h2>
+                <h2 class="instructions-title">Panduan Pembayaran QR</h2>
                 <button class="close-btn" id="close-instructions">✕</button>
             </div>
             
@@ -558,15 +622,15 @@
                 <div class="instruction-step-item">
                     <div class="step-number">5</div>
                     <div class="step-text">
-                        <h3>Muat Naik Resit (Penting!!)</h3>
-                        <p>Muat naik gambar resit pembayaran dan tekan "Saya Sudah Bayar". Tunggu sehingga pengesahan dibuat, Jangan Close/Back.Setelah berjaya tekan button Seterusnya Untuk memastikan ID dapat dihantar ke Email anda.</p>
+                        <h3>Muat Naik Resit</h3>
+                        <p>Muat naik gambar resit pembayaran dan tekan "Saya Sudah Bayar". Tunggu sehingga pengesahan dibuat.</p>
                     </div>
                 </div>
                 <div class="instruction-step-item">
                     <div class="step-number">6</div>
                     <div class="step-text">
                         <h3>Pengesahan (SANGAT PENTING !!)</h3>
-                        <p>Semasa Pengesahan, jangan back/close, tunggu sehingga selesai. Setelah berjaya Tekan "Seterusnya" untuk dapatkan ID & EMAIL</p>
+                        <p>Jangan back/close semasa pengesahan. Setelah berjaya tekan "Seterusnya" untuk dapatkan ID & EMAIL.</p>
                     </div>
                 </div>
             </div>
@@ -577,14 +641,22 @@
         </div>
     </div>
 
+    <!-- OCR Debug Panel (only visible with ?debug=1) -->
+    <div class="ocr-debug-panel" id="ocr-debug-panel">
+        <button class="debug-close" id="debug-close">✕</button>
+        <h4>🔍 OCR Debug Log</h4>
+        <pre id="debug-log"></pre>
+    </div>
+
     <script> 
         // ====================================
         //      CONFIGURATION
         // ====================================
         const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwoSrlYQew7kuo75fbJtjy-Z019Z4q5pTo8wDBoRqGUSmJE-PvsgpTepoy6jYFoqTh4oA/exec';
-        
-        // WARNING: Make sure this key is valid and active in your OpenRouter dashboard!
         const OPENROUTER_API_KEY = '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';
+        
+        // Debug mode check
+        const isDebugMode = new URLSearchParams(window.location.search).get('debug') === '1';
 
         function getUrlParameter(name) {
             name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
@@ -592,6 +664,29 @@
             var results = regex.exec(location.search);
             return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
         }   
+
+        // ====================================
+        //      DEBUG LOGGER
+        // ====================================
+        function debugLog(message, data = null) {
+            const timestamp = new Date().toLocaleTimeString();
+            const logLine = `[${timestamp}] ${message}`;
+            console.log(logLine, data || '');
+            
+            if (isDebugMode) {
+                const debugPanel = document.getElementById('ocr-debug-panel');
+                const debugLog = document.getElementById('debug-log');
+                if (debugPanel && debugLog) {
+                    debugPanel.classList.add('active');
+                    debugLog.textContent += logLine + '\n';
+                    if (data) {
+                        debugLog.textContent += JSON.stringify(data, null, 2) + '\n';
+                    }
+                    debugLog.textContent += '---\n';
+                    debugLog.scrollTop = debugLog.scrollHeight;
+                }
+            }
+        }
 
         // ====================================
         //      IMAGE COMPRESSION HELPER
@@ -617,6 +712,7 @@
                         ctx.drawImage(img, 0, 0, width, height);
                         
                         const dataUrl = canvas.toDataURL('image/jpeg', quality);
+                        debugLog(`Image compressed: ${img.width}x${img.height} -> ${width}x${height}, quality: ${quality}`);
                         resolve(dataUrl);
                     };
                     img.onerror = reject;
@@ -625,6 +721,333 @@
                 reader.onerror = reject;
                 reader.readAsDataURL(file);
             });
+        }
+
+        // ====================================
+        //      OCR VERIFICATION (Tesseract.js)
+        // ====================================
+        async function performOCR(base64DataUrl) {
+            debugLog('Starting OCR with Tesseract.js...');
+            
+            try {
+                const result = await Tesseract.recognize(
+                    base64DataUrl,
+                    'eng+msa', // English + Malay
+                    {
+                        logger: (m) => {
+                            if (m.status === 'recognizing text') {
+                                const percent = Math.round(m.progress * 100);
+                                debugLog(`OCR progress: ${percent}%`);
+                                updateLoadingSubtext(`Mengecam teks resit... ${percent}%`);
+                            } else {
+                                debugLog(`OCR status: ${m.status}`);
+                            }
+                        }
+                    }
+                );
+                
+                const extractedText = result.data.text.toLowerCase().trim();
+                const confidence = result.data.confidence;
+                
+                debugLog('OCR completed', {
+                    confidence: confidence,
+                    textLength: extractedText.length,
+                    preview: extractedText.substring(0, 200) + (extractedText.length > 200 ? '...' : '')
+                });
+                
+                return {
+                    success: true,
+                    text: extractedText,
+                    confidence: confidence,
+                    rawText: result.data.text
+                };
+                
+            } catch (error) {
+                debugLog('OCR failed', { error: error.message });
+                return {
+                    success: false,
+                    text: '',
+                    confidence: 0,
+                    error: error.message
+                };
+            }
+        }
+
+        function analyzeOCRText(ocrText, expectedAmount) {
+            debugLog('Analyzing OCR text...', { expectedAmount });
+            
+            const checks = {
+                recipientFound: false,
+                amountFound: false,
+                amountMatched: false,
+                keywordFound: false,
+                totalScore: 0
+            };
+            
+            const details = {
+                recipientMatch: null,
+                amountExtracted: null,
+                keywordsFound: []
+            };
+            
+            // 1. Check recipient name: "Hasrastore" or "Hasra"
+            const recipientPatterns = [
+                /hasrastore/i,
+                /hasra\s*store/i,
+                /hasra/i
+            ];
+            
+            for (const pattern of recipientPatterns) {
+                if (pattern.test(ocrText)) {
+                    checks.recipientFound = true;
+                    details.recipientMatch = pattern.source;
+                    break;
+                }
+            }
+            
+            // 2. Check amount
+            const amountPatterns = [
+                /rm\s*([\d,]+\.?\d*)/i,
+                /amount\s*[:\s]*([\d,]+\.?\d*)/i,
+                /total\s*[:\s]*rm?\s*([\d,]+\.?\d*)/i,
+                /paid\s*[:\s]*rm?\s*([\d,]+\.?\d*)/i,
+                /transfer\s*[:\s]*rm?\s*([\d,]+\.?\d*)/i,
+                /[\$]?([\d,]+\.\d{2})/
+            ];
+            
+            const expectedNum = parseFloat(expectedAmount.replace(/,/g, ''));
+            
+            for (const pattern of amountPatterns) {
+                const match = ocrText.match(pattern);
+                if (match) {
+                    const extractedAmount = parseFloat(match[1].replace(/,/g, ''));
+                    if (!isNaN(extractedAmount) && extractedAmount > 0) {
+                        checks.amountFound = true;
+                        details.amountExtracted = extractedAmount;
+                        
+                        // Check if amount matches (allow small variance ±0.50)
+                        const diff = Math.abs(extractedAmount - expectedNum);
+                        if (diff <= 0.50) {
+                            checks.amountMatched = true;
+                        }
+                        break;
+                    }
+                }
+            }
+            
+            // 3. Check keywords
+            const keywords = ['paid', 'success', 'successful', 'qr', 'payment', 'completed', 'transfer', 'berjaya', 'dibayar'];
+            for (const kw of keywords) {
+                if (ocrText.includes(kw)) {
+                    checks.keywordFound = true;
+                    details.keywordsFound.push(kw);
+                }
+            }
+            
+            // Calculate score
+            if (checks.recipientFound) checks.totalScore++;
+            if (checks.amountMatched) checks.totalScore += 2; // Amount match is weighted higher
+            else if (checks.amountFound) checks.totalScore += 0.5;
+            if (checks.keywordFound) checks.totalScore++;
+            
+            debugLog('OCR Analysis result', {
+                checks,
+                details,
+                totalScore: checks.totalScore,
+                threshold: 2
+            });
+            
+            return {
+                ...checks,
+                ...details,
+                isVerified: checks.totalScore >= 2,
+                method: 'OCR',
+                reason: generateVerificationReason(checks, details)
+            };
+        }
+
+        function generateVerificationReason(checks, details) {
+            const reasons = [];
+            if (checks.recipientFound) reasons.push(`Penerima "${details.recipientMatch}" ditemui`);
+            if (checks.amountMatched) reasons.push(`Jumlah RM ${details.amountExtracted} sepadan`);
+            else if (checks.amountFound) reasons.push(`Jumlah RM ${details.amountExtracted} ditemui (tidak sepadan)`);
+            if (checks.keywordFound) reasons.push(`Kata kunci: ${details.keywordsFound.join(', ')}`);
+            return reasons.join('. ') || 'Tiada maklumat yang dikesan';
+        }
+
+        // ====================================
+        //      AI VERIFICATION (FALLBACK ONLY)
+        // ====================================
+        async function verifyWithAI(base64DataUrl, expectedAmount) {
+            debugLog('Falling back to AI verification...');
+            
+            const MAX_ATTEMPTS = 2;
+            let lastError = null;
+
+            for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+                try {
+                    updateLoadingText(`AI sedang menyemak resit...`);
+                    updateLoadingSubtext(attempt > 1 ? `Cuba semula (${attempt}/${MAX_ATTEMPTS})...` : 'Sila tunggu');
+
+                    const promptText = `Analyze this payment receipt and verify the following:
+
+1. The recipient name is "Hasrastore" (or a very similar variation such as "Hasra").
+2. The paid amount is exactly or very close to RM ${expectedAmount}.
+3. The image contains at least one of the following keywords: "paid", "success", "successful", or "QR".
+
+Strict rules:
+- The amount must closely match the expectedAmount.
+- At least 2 out of the 3 conditions above must be satisfied to pass.
+
+Respond strictly with only one word:
+- "VERIFIED" if the conditions are met
+- "FAILED" if they are not`;
+
+                    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                        method: "POST",
+                        headers: {
+                            "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            model: "openrouter/free",
+                            messages: [
+                                {
+                                    role: "user",
+                                    content: [
+                                        { type: "text", text: promptText },
+                                        { type: "image_url", image_url: { url: base64DataUrl } }
+                                    ]
+                                }
+                            ]
+                        })
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({}));
+                        const errorMessage = errorData.error?.message || `HTTP error ${response.status}`;
+                        
+                        if (response.status === 429 || response.status >= 500) {
+                            lastError = new Error(errorMessage);
+                            debugLog(`AI attempt ${attempt} failed: ${errorMessage}`);
+                            if (attempt < MAX_ATTEMPTS) {
+                                await new Promise(resolve => setTimeout(resolve, 2000));
+                                continue;
+                            }
+                        } else {
+                            throw new Error(errorMessage);
+                        }
+                    }
+
+                    const result = await response.json();
+                    const aiMessage = result.choices[0].message.content.toLowerCase().trim();
+                    
+                    debugLog('AI Response', { response: aiMessage });
+
+                    const verified = aiMessage.includes('verified');
+
+                    return {
+                        verified: verified,
+                        method: 'AI',
+                        extractedText: aiMessage,
+                        details: { aiResponse: aiMessage },
+                        reason: verified ? 'AI mengesahkan resit ini sah' : 'AI tidak dapat mengesahkan resit ini'
+                    };
+
+                } catch (error) {
+                    debugLog(`AI error (attempt ${attempt})`, { error: error.message });
+                    lastError = error;
+                    if (attempt < MAX_ATTEMPTS) continue;
+                }
+            }
+
+            return {
+                verified: false,
+                method: 'AI',
+                error: lastError ? lastError.message : 'AI verification failed',
+                reason: 'AI tidak dapat memproses resit'
+            };
+        }
+
+        // ====================================
+        //      MAIN VERIFICATION FLOW
+        //      OCR → (if inconclusive) → AI → (if failed) → Manual
+        // ====================================
+        async function verifyReceipt(base64DataUrl, expectedAmount) {
+            debugLog('=== STARTING VERIFICATION FLOW ===');
+            debugLog(`Expected amount: RM ${expectedAmount}`);
+            
+            // STEP 1: Try OCR first
+            showLoading('Mengecam teks daripada resit...', 'Langkah 1/2: OCR (Pantasan)');
+            
+            const ocrResult = await performOCR(base64DataUrl);
+            
+            if (ocrResult.success && ocrResult.text.length > 20) {
+                // We got some text, let's analyze it
+                const analysis = analyzeOCRText(ocrResult.text, expectedAmount);
+                
+                debugLog('OCR Analysis complete', {
+                    isVerified: analysis.isVerified,
+                    totalScore: analysis.totalScore,
+                    method: 'OCR'
+                });
+                
+                if (analysis.isVerified) {
+                    // OCR was conclusive - NO AI NEEDED!
+                    debugLog('✅ VERIFIED BY OCR - AI NOT USED');
+                    return {
+                        verified: true,
+                        method: 'OCR',
+                        extractedText: ocrResult.text,
+                        details: analysis,
+                        reason: analysis.reason,
+                        aiSkipped: true
+                    };
+                }
+                
+                // OCR found text but couldn't verify
+                // Check if OCR found enough to confidently REJECT
+                if (analysis.totalScore === 0 && ocrResult.confidence > 60) {
+                    // OCR read the text well but found nothing relevant - likely not a valid receipt
+                    debugLog('❌ OCR confidently REJECTED - checking if AI should try...');
+                    
+                    // Still give AI a chance since OCR might have misread
+                    // But only if confidence isn't too high
+                    if (ocrResult.confidence < 85) {
+                        debugLog('OCR confidence moderate, will try AI as fallback');
+                    } else {
+                        debugLog('OCR confidence very high, rejecting without AI');
+                        return {
+                            verified: false,
+                            method: 'OCR',
+                            extractedText: ocrResult.text,
+                            details: analysis,
+                            reason: `OCR tidak menjumpai maklumat pembayaran yang sah. ${analysis.reason}`,
+                            aiSkipped: true
+                        };
+                    }
+                }
+                
+                // OCR was inconclusive - proceed to AI
+                debugLog('⚠️ OCR inconclusive, proceeding to AI...');
+                
+            } else {
+                // OCR failed to extract text
+                debugLog('⚠️ OCR failed to extract text, proceeding to AI...');
+            }
+            
+            // STEP 2: Fall back to AI
+            updateLoadingText('OCR tidak pasti, menggunakan AI...', 'Langkah 2/2: AI Pengesahan');
+            await new Promise(resolve => setTimeout(resolve, 500)); // Small delay for UX
+            
+            const aiResult = await verifyWithAI(base64DataUrl, expectedAmount);
+            
+            debugLog('=== VERIFICATION FLOW COMPLETE ===', {
+                finalMethod: aiResult.method,
+                verified: aiResult.verified
+            });
+            
+            return aiResult;
         }
 
         // ====================================
@@ -650,23 +1073,24 @@
                 const result = await response.json();
                 
                 if (result.status === 'success') {
-                    console.log('Order registered in Google Sheets with ID:', result.orderId);
+                    debugLog('Order registered in Google Sheets', { orderId: result.orderId });
                     return result.orderId;
                 } else {
-                    console.error('Failed to register order in Google Sheets:', result.message);
+                    debugLog('Failed to register order', { message: result.message });
                     return null;
                 }
             } catch (error) {
-                console.error('Error registering order in Google Sheets:', error);
+                debugLog('Error registering order', { error: error.message });
                 return null;
             }
         }
 
-        async function updatePaymentStatusInGoogleSheets(orderId, isManualReview = false) {
+        async function updatePaymentStatusInGoogleSheets(orderId, isManualReview = false, verificationMethod = 'OCR') {
             try {
                 const params = new URLSearchParams({
                     action: 'updatePayment',
-                    orderId: orderId
+                    orderId: orderId,
+                    method: verificationMethod
                 });
                 
                 if (isManualReview) {
@@ -682,14 +1106,14 @@
                 const result = await response.json();
                 
                 if (result.status === 'success') {
-                    console.log('Payment status updated in Google Sheets');
+                    debugLog('Payment status updated', { method: verificationMethod });
                     return true;
                 } else {
-                    console.error('Failed to update payment status:', result.message);
+                    debugLog('Failed to update payment status', { message: result.message });
                     return false;
                 }
             } catch (error) {
-                console.error('Error updating payment status:', error);
+                debugLog('Error updating payment status', { error: error.message });
                 return false;
             }
         }
@@ -718,7 +1142,6 @@
                 localStorage.setItem('prostreamQRPaymentData', JSON.stringify(orderData));
                 
                 if (!orderId) {
-                    console.log('Registering new order in Google Sheets...');
                     const newOrderId = await registerOrderInGoogleSheets(orderData);
                     if (newOrderId) {
                         orderData.orderId = newOrderId;
@@ -765,10 +1188,19 @@
             }, 3000);
         }
 
-        function showLoading(text = 'Sedang memproses pembayaran anda...') {
+        function showLoading(text = 'Sedang memproses pembayaran anda...', subtext = 'Sila tunggu') {
             document.getElementById('loading-text').textContent = text;
+            document.getElementById('loading-subtext').textContent = subtext;
             document.getElementById('loading-overlay').classList.add('active');
             document.body.style.overflow = 'hidden';
+        }
+
+        function updateLoadingText(text) {
+            document.getElementById('loading-text').textContent = text;
+        }
+
+        function updateLoadingSubtext(text) {
+            document.getElementById('loading-subtext').textContent = text;
         }
 
         function hideLoading() {
@@ -776,12 +1208,31 @@
             document.body.style.overflow = '';
         }
 
-        function showVerificationModal(isSuccess) {
+        function showVerificationModal(isSuccess, method = 'OCR', reason = '') {
             const modal = document.getElementById('verification-modal');
             const successContent = document.getElementById('verification-success');
             const failedContent = document.getElementById('verification-failed');
+            const successBadge = document.getElementById('success-badge');
+            const failedBadge = document.getElementById('failed-badge');
+            const failedMessage = document.getElementById('failed-message');
             
             modal.classList.add('active');
+            
+            // Update badges based on method
+            if (method === 'OCR') {
+                successBadge.className = 'verification-badge badge-ocr';
+                successBadge.textContent = '✅ Disahkan oleh OCR (Pantasan)';
+                failedBadge.className = 'verification-badge badge-failed';
+                failedBadge.textContent = '❌ OCR Gagal';
+            } else if (method === 'AI') {
+                successBadge.className = 'verification-badge badge-ai';
+                successBadge.textContent = '🤖 Disahkan oleh AI';
+                failedBadge.className = 'verification-badge badge-failed';
+                failedBadge.textContent = '❌ AI Gagal';
+            } else {
+                failedBadge.className = 'verification-badge badge-failed';
+                failedBadge.textContent = '❌ Gagal';
+            }
             
             if (isSuccess) {
                 successContent.classList.add('active');
@@ -789,6 +1240,7 @@
             } else {
                 successContent.classList.remove('active');
                 failedContent.classList.add('active');
+                failedMessage.textContent = reason || 'Sistem tidak dapat mengesan maklumat resit dengan jelas. Sila hubungi admin untuk pengesahan manual.';
             }
         }
 
@@ -798,101 +1250,16 @@
         }
 
         // ====================================
-        //      AI OCR VERIFICATION (Qwen Vision Model + Retry)
-        // ==================================== 
-                async function verifyReceipt(base64DataUrl, expectedAmount) {
-            const MAX_ATTEMPTS = 3;
-            let lastError = null;
-
-            for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-                try {
-                    if (attempt === 1) {
-                        showLoading('AI sedang menyemak resit anda...');
-                    } else {
-                        showLoading(`Sistem sibuk, mencuba semula... (${attempt}/${MAX_ATTEMPTS})`);
-                        await new Promise(resolve => setTimeout(resolve, 2000)); 
-                    }
-
-                    const promptText = `Analyze this payment receipt and verify the following:
-
-1. The recipient name is "Hasrastore" (or a very similar variation such as "Hasra").
-2. The paid amount is exactly or very close to RM ${expectedAmount}.
-3. The image contains at least one of the following keywords: "paid", "success", "successful", or "QR".
-
-Strict rules:
-- The amount must closely match the expectedAmount.
-- At least 2 out of the 3 conditions above must be satisfied to pass.
-
-Respond strictly with only one word:
-- "VERIFIED" if the conditions are met
-- "FAILED" if they are not`;
-
-                    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-                        method: "POST",
-                        headers: {
-                            "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
-                            "Content-Type": "application/json"
-                        },
-                        body: JSON.stringify({
-                            model: "openrouter/free", // UPDATED MODEL
-                            messages: [
-                                {
-                                    role: "user",
-                                    content: [
-                                        { type: "text", text: promptText },
-                                        { type: "image_url", image_url: { url: base64DataUrl } }
-                                    ]
-                                }
-                            ]
-                        })
-                    });
-
-                    if (!response.ok) {
-                        const errorData = await response.json().catch(() => ({}));
-                        const errorMessage = errorData.error?.message || `HTTP error ${response.status}`;
-                        
-                        if (response.status === 429 || response.status >= 500) {
-                            lastError = new Error(errorMessage);
-                            console.warn(`Attempt ${attempt} failed: ${errorMessage}. Retrying...`);
-                            continue; 
-                        } else {
-                            throw new Error(errorMessage);
-                        }
-                    }
-
-                    const result = await response.json();
-                    const aiMessage = result.choices[0].message.content.toLowerCase().trim();
-                    
-                    console.log(`AI Response (Attempt ${attempt}):`, aiMessage);
-
-                    const verified = aiMessage.includes('verified');
-
-                    return {
-                        verified: verified,
-                        extractedText: aiMessage,
-                        details: { aiResponse: aiMessage }
-                    };
-
-                } catch (error) {
-                    console.error(`Error during AI verification (Attempt ${attempt}):`, error);
-                    lastError = error;
-                    if (attempt < MAX_ATTEMPTS) continue;
-                }
-            }
-
-            console.error('All AI verification attempts failed.', lastError);
-            return {
-                verified: false,
-                extractedText: '',
-                error: lastError ? lastError.message : 'Sistem sibuk. Sila cuba hantar manual.',
-                maxRetriesReached: true
-            };
-        }
-
-        // ====================================
         //      UI LOGIC
         // ====================================
         document.addEventListener('DOMContentLoaded', async function() {
+            // Debug panel close button
+            if (isDebugMode) {
+                document.getElementById('debug-close').addEventListener('click', () => {
+                    document.getElementById('ocr-debug-panel').classList.remove('active');
+                });
+            }
+            
             const orderData = await getOrderData();
             
             if (!orderData) {
@@ -971,91 +1338,76 @@ Respond strictly with only one word:
             document.getElementById('close-instructions').addEventListener('click', hideInstructionsModal);
             document.getElementById('start-payment').addEventListener('click', hideInstructionsModal);
 
-            const step1NextBtn = document.getElementById('step-1-next');
-            if (step1NextBtn) step1NextBtn.addEventListener('click', () => showStep(2));
+            // Step navigation
+            document.getElementById('step-1-next')?.addEventListener('click', () => showStep(2));
+            document.getElementById('step-2-prev')?.addEventListener('click', () => showStep(1));
+            document.getElementById('step-2-next')?.addEventListener('click', () => showStep(3));
+            document.getElementById('step-3-prev')?.addEventListener('click', () => showStep(2));
+            document.getElementById('step-3-next')?.addEventListener('click', () => showStep(4));
+            document.getElementById('step-4-prev')?.addEventListener('click', () => showStep(3));
+            document.getElementById('step-4-next')?.addEventListener('click', () => showStep(5));
+            document.getElementById('step-5-prev')?.addEventListener('click', () => showStep(4));
 
-            const step2PrevBtn = document.getElementById('step-2-prev');
-            const step2NextBtn = document.getElementById('step-2-next');
-            if (step2PrevBtn) step2PrevBtn.addEventListener('click', () => showStep(1));
-            if (step2NextBtn) step2NextBtn.addEventListener('click', () => showStep(3));
-
-            const step3PrevBtn = document.getElementById('step-3-prev');
-            const step3NextBtn = document.getElementById('step-3-next');
-            if (step3PrevBtn) step3PrevBtn.addEventListener('click', () => showStep(2));
-            if (step3NextBtn) step3NextBtn.addEventListener('click', () => showStep(4));
-
-            const step4PrevBtn = document.getElementById('step-4-prev');
-            const step4NextBtn = document.getElementById('step-4-next');
-            if (step4PrevBtn) step4PrevBtn.addEventListener('click', () => showStep(3));
-            if (step4NextBtn) step4NextBtn.addEventListener('click', () => showStep(5));
-
-            const step5PrevBtn = document.getElementById('step-5-prev');
-            if (step5PrevBtn) step5PrevBtn.addEventListener('click', () => showStep(4));
-
-            const downloadQrBtn = document.getElementById('download-qr');
-            if (downloadQrBtn) {
-                downloadQrBtn.addEventListener('click', async function() {
-                    const downloadBtn = this;
-                    const originalText = downloadBtn.innerHTML;
-                    downloadBtn.innerHTML = '<span style="margin-right: 8px;">⏳</span> Memuat turun...';
+            // Download QR
+            document.getElementById('download-qr')?.addEventListener('click', async function() {
+                const downloadBtn = this;
+                const originalText = downloadBtn.innerHTML;
+                downloadBtn.innerHTML = '<span style="margin-right: 8px;">⏳</span> Memuat turun...';
+                
+                try {
+                    const qrImage = document.getElementById('qr-code-image');
+                    const imageUrl = qrImage.src;
                     
-                    try {
-                        const qrImage = document.getElementById('qr-code-image');
-                        const imageUrl = qrImage.src;
-                        
-                        if ('download' in document.createElement('a')) {
-                            const response = await fetch(imageUrl);
-                            const blob = await response.blob();
-                            const blobUrl = URL.createObjectURL(blob);
-                            const downloadLink = document.createElement('a');
-                            downloadLink.href = blobUrl;
-                            downloadLink.download = 'qr.png';
-                            downloadLink.style.display = 'none';
-                            document.body.appendChild(downloadLink);
-                            downloadLink.click();
-                            document.body.removeChild(downloadLink);
-                            setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
-                            showNotification('QR telah dimuat turun ke folder muat turun anda!', 'success');
-                        }
-                    } catch (error) {
-                        console.error('Download error:', error);
-                        const qrImage = document.getElementById('qr-code-image');
-                        const newWindow = window.open(qrImage.src, '_blank');
-                        showNotification('Sila muat turun gambar dari tab baru yang dibuka', 'success');
-                        setTimeout(() => { if (newWindow && !newWindow.closed) newWindow.close(); }, 3000);
-                    } finally {
-                        setTimeout(() => { downloadBtn.innerHTML = originalText; }, 1000);
+                    if ('download' in document.createElement('a')) {
+                        const response = await fetch(imageUrl);
+                        const blob = await response.blob();
+                        const blobUrl = URL.createObjectURL(blob);
+                        const downloadLink = document.createElement('a');
+                        downloadLink.href = blobUrl;
+                        downloadLink.download = 'qr.png';
+                        downloadLink.style.display = 'none';
+                        document.body.appendChild(downloadLink);
+                        downloadLink.click();
+                        document.body.removeChild(downloadLink);
+                        setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
+                        showNotification('QR telah dimuat turun ke folder muat turun anda!', 'success');
                     }
-                });
-            }
+                } catch (error) {
+                    console.error('Download error:', error);
+                    const qrImage = document.getElementById('qr-code-image');
+                    window.open(qrImage.src, '_blank');
+                    showNotification('Sila muat turun gambar dari tab baru yang dibuka', 'success');
+                } finally {
+                    setTimeout(() => { downloadBtn.innerHTML = originalText; }, 1000);
+                }
+            });
 
-            const proofImageInput = document.getElementById('proof-image');
-            if (proofImageInput) {
-                proofImageInput.addEventListener('change', function() {
-                    const fileLabel = document.getElementById('file-label');
-                    const previewContainer = document.getElementById('receipt-preview-container');
-                    const previewImage = document.getElementById('receipt-preview');
+            // File input preview
+            document.getElementById('proof-image')?.addEventListener('change', function() {
+                const fileLabel = document.getElementById('file-label');
+                const previewContainer = document.getElementById('receipt-preview-container');
+                const previewImage = document.getElementById('receipt-preview');
 
-                    if (this.files && this.files[0]) {
-                        const file = this.files[0];
-                        fileLabel.textContent = file.name;
-                        fileLabel.classList.add('has-file');
-                        
-                        const reader = new FileReader();
-                        reader.onload = (e) => {
-                            previewImage.src = e.target.result;
-                            previewContainer.classList.add('active');
-                        };
-                        reader.readAsDataURL(file);
-                    } else {
-                        fileLabel.textContent = 'Klik untuk memilih gambar resit';
-                        fileLabel.classList.remove('has-file');
-                        previewContainer.classList.remove('active');
-                        previewImage.src = '';
-                    }
-                });
-            }
+                if (this.files && this.files[0]) {
+                    const file = this.files[0];
+                    fileLabel.textContent = file.name;
+                    fileLabel.classList.add('has-file');
+                    
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        previewImage.src = e.target.result;
+                        previewContainer.classList.add('active');
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    fileLabel.textContent = 'Klik untuk memilih gambar resit';
+                    fileLabel.classList.remove('has-file');
+                    previewContainer.classList.remove('active');
+                    previewImage.src = '';
+                }
+            });
 
+            // Proceed to success page
             function proceedToSuccess() {
                 hideVerificationModal();
                 
@@ -1081,83 +1433,82 @@ Respond strictly with only one word:
                 window.location.href = 'payment-successful.html';
             }
 
-            const continueToSuccessBtn = document.getElementById('continue-to-success');
-            if (continueToSuccessBtn) {
-                continueToSuccessBtn.addEventListener('click', () => proceedToSuccess());
-            }
+            document.getElementById('continue-to-success')?.addEventListener('click', proceedToSuccess);
 
-            const manualReviewBtn = document.getElementById('manual-review-proceed');
-            if (manualReviewBtn) {
-                manualReviewBtn.addEventListener('click', async function() {
-                    if (orderData.orderId) {
-                        await updatePaymentStatusInGoogleSheets(orderData.orderId, true);
-                    }
-                    hideVerificationModal();
-                    const phoneNumber = '60172703949';
-                    const message = encodeURIComponent(`Hai admin, pengesahan automatik resit saya gagal. Berikut adalah butiran dan resit saya untuk pengesahan manual.\n\nNama: ${orderData.name}\nEmail: ${orderData.email}\nNo. Telefon: ${orderData.phone}\nJumlah: RM ${orderData.amount}`);
-                    window.open(`https://wa.me/${phoneNumber}?text=${message}`, '_blank');
-                });
-            }
+            document.getElementById('manual-review-proceed')?.addEventListener('click', async function() {
+                if (orderData.orderId) {
+                    await updatePaymentStatusInGoogleSheets(orderData.orderId, true, 'Manual');
+                }
+                hideVerificationModal();
+                const phoneNumber = '60172703949';
+                const message = encodeURIComponent(`Hai admin, pengesahan automatik resit saya gagal. Berikut adalah butiran dan resit saya untuk pengesahan manual.\n\nNama: ${orderData.name}\nEmail: ${orderData.email}\nNo. Telefon: ${orderData.phone}\nJumlah: RM ${orderData.amount}`);
+                window.open(`https://wa.me/${phoneNumber}?text=${message}`, '_blank');
+            });
 
-            const tryAgainBtn = document.getElementById('try-again');
-            if (tryAgainBtn) {
-                tryAgainBtn.addEventListener('click', function() {
-                    hideVerificationModal();
-                    document.getElementById('proof-image').value = '';
-                    document.getElementById('file-label').textContent = 'Klik untuk memilih gambar resit';
-                    document.getElementById('file-label').classList.remove('has-file');
-                    document.getElementById('receipt-preview-container').classList.remove('active');
-                    document.getElementById('receipt-preview').src = '';
-                });
-            }
+            document.getElementById('try-again')?.addEventListener('click', function() {
+                hideVerificationModal();
+                document.getElementById('proof-image').value = '';
+                document.getElementById('file-label').textContent = 'Klik untuk memilih gambar resit';
+                document.getElementById('file-label').classList.remove('has-file');
+                document.getElementById('receipt-preview-container').classList.remove('active');
+                document.getElementById('receipt-preview').src = '';
+            });
 
-            const submitPaymentBtn = document.getElementById('submit-payment');
-            if (submitPaymentBtn) {
-                submitPaymentBtn.addEventListener('click', async function() {
-                    const fileInput = document.getElementById('proof-image');
+            // ====================================
+            //      MAIN SUBMIT HANDLER
+            // ====================================
+            document.getElementById('submit-payment')?.addEventListener('click', async function() {
+                const fileInput = document.getElementById('proof-image');
+                
+                if (!fileInput.files || !fileInput.files[0]) {
+                    showNotification('Sila pilih gambar resit pembayaran', 'error');
+                    return;
+                }
+
+                const originalFile = fileInput.files[0];
+
+                if (originalFile.size > 10 * 1024 * 1024) {
+                    showNotification('Saiz gambar terlalu besar. Sila pilih gambar kurang dari 10MB.', 'error');
+                    return;
+                }
+
+                try {
+                    // Step 1: Compress image
+                    showLoading('Memampatkan gambar...', 'Sila tunggu');
+                    const compressedBase64 = await compressImageToBase64(originalFile, 1000, 0.6);
                     
-                    if (!fileInput.files || !fileInput.files[0]) {
-                        showNotification('Sila pilih gambar resit pembayaran', 'error');
-                        return;
+                    // Step 2: Run verification flow (OCR first, AI as fallback)
+                    const verificationResult = await verifyReceipt(compressedBase64, orderData.amount);
+                    
+                    hideLoading();
+                    
+                    debugLog('Final verification result', verificationResult);
+
+                    // Show appropriate modal
+                    showVerificationModal(
+                        verificationResult.verified,
+                        verificationResult.method || 'OCR',
+                        verificationResult.reason || ''
+                    );
+                    
+                    // Update Google Sheets if verified
+                    if (verificationResult.verified && orderData.orderId) {
+                        debugLog('Updating payment status as verified', { method: verificationResult.method });
+                        await updatePaymentStatusInGoogleSheets(
+                            orderData.orderId, 
+                            false, 
+                            verificationResult.method
+                        );
                     }
+                    
+                } catch (error) {
+                    debugLog('Submission Process Error', { error: error.message });
+                    hideLoading();
+                    showNotification('Sistem gagal memproses. Sila cuba lagi.', 'error');
+                }
+            });
 
-                    const originalFile = fileInput.files[0];
-
-                    if (originalFile.size > 10 * 1024 * 1024) {
-                        showNotification('Saiz gambar terlalu besar. Sila pilih gambar kurang dari 10MB.', 'error');
-                        return;
-                    }
-
-                    try {
-                        showLoading('Memampatkan gambar...');
-                        const compressedBase64 = await compressImageToBase64(originalFile, 1000, 0.6);
-                        
-                        const verificationResult = await verifyReceipt(compressedBase64, orderData.amount);
-                        
-                        hideLoading(); 
-
-                        if (!verificationResult.error) {
-                            showVerificationModal(verificationResult.verified);
-                            
-                            if (verificationResult.verified) {
-                                if (orderData.orderId) {
-                                    console.log('Updating payment status in Google Sheets...');
-                                    await updatePaymentStatusInGoogleSheets(orderData.orderId, false);
-                                }
-                            } 
-                        } else {
-                            showNotification('Sistem sibuk. Pengesahan automatik gagal.', 'error');
-                            showVerificationModal(false); 
-                        }
-                        
-                    } catch (error) {
-                        console.error('Submission Process Error:', error);
-                        hideLoading();
-                        showNotification('Sistem gagal memproses. Sila cuba lagi.', 'error');
-                    }
-                });
-            }
-
+            // Prevent accidental back navigation
             window.addEventListener('beforeunload', function(e) {
                 if (currentStep < totalSteps) {
                     e.preventDefault();
