@@ -9,24 +9,22 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;900&display=swap" rel="stylesheet">
 
     <!-- Meta Pixel Code -->
-<script>
-!function(f,b,e,v,n,t,s)
-{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-n.queue=[];t=b.createElement(e);t.async=!0;
-t.src=v;s=b.getElementsByTagName(e)[0];
-s.parentNode.insertBefore(t,s)}(window, document,'script',
-'https://connect.facebook.net/en_US/fbevents.js');
-fbq('init', '2276519576162204', {
-    'domain': ['prostreammy.vercel.app']
-});
-fbq('track', 'PageView');
-</script>
-<noscript><img height="1" width="1" style="display:none"
-src="https://www.facebook.com/tr?id=2276519576162204&ev=PageView&noscript=1"
-/></noscript>
-<!-- End Meta Pixel Code -->
+    <script>
+    !function(f,b,e,v,n,t,s)
+    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+    n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t,s)}(window, document,'script',
+    'https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', '2276519576162204');
+    fbq('track', 'PageView');
+    </script>
+    <noscript><img height="1" width="1" style="display:none"
+    src="https://www.facebook.com/tr?id=2276519576162204&ev=PageView&noscript=1"
+    /></noscript>
+    <!-- End Meta Pixel Code -->
     
     <style>
         :root {
@@ -281,20 +279,17 @@ src="https://www.facebook.com/tr?id=2276519576162204&ev=PageView&noscript=1"
             <div class="status-card">
                 <p id="statusMessage"></p>
                 
-                <!-- Order Details Section -->
                 <div class="order-details" id="orderDetails">
-                    <div class="loading-spinner"></div>
                     <p style="text-align: center;">Memuatkan butiran pesanan...</p>
                 </div>
 
-                <!-- Steps Section (only for success) -->
                 <div id="stepsSection" class="steps" style="display: none;">
                     <h3>Langkah Seterusnya:</h3>
                     <div class="step">
                         <div class="step-number">1</div>
                         <div class="step-content">
                             <h4>Semak Emel & WhatsApp</h4>
-                            <p>Anda akan menerima pautan muat turun dan panduan pemasangan dalam masa 15 minit.CHECK FOLDER SPAM atau SEARCH "prostream" atau "toyyibpay" </p>
+                            <p>Anda akan menerima pautan muat turun dan panduan pemasangan dalam masa 15 minit. CHECK FOLDER SPAM atau SEARCH "prostream" atau "toyyibpay"</p>
                         </div>
                     </div>
                     <div class="step">
@@ -313,7 +308,6 @@ src="https://www.facebook.com/tr?id=2276519576162204&ev=PageView&noscript=1"
                     </div>
                 </div>
 
-                <!-- Action Buttons -->
                 <div class="action-buttons">
                     <a href="https://prostreammy.vercel.app/" class="btn">Kembali ke Laman Utama</a>
                     <a href="#" class="btn btn-whatsapp" id="whatsapp-btn">Hubungi WhatsApp</a>
@@ -334,19 +328,15 @@ src="https://www.facebook.com/tr?id=2276519576162204&ev=PageView&noscript=1"
         </footer>
     </div>
 
-    <!-- Notification element for status updates -->
     <div id="notification" class="notification">
         <span class="notification-icon"></span>
         <span class="notification-text"></span>
     </div>
 
-        <script>
-        // ====================================
-        //      CONFIGURATION
-        // ====================================
+    <script>
         const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwoSrlYQew7kuo75fbJtjy-Z019Z4q5pTo8wDBoRqGUSmJE-PvsgpTepoy6jYFoqTh4oA/exec';
+        const WHATSAPP_NUMBER = '601127412402';
 
-        // Helper: Show Notification
         function showNotification(message, type) {
             const notification = document.getElementById('notification');
             const iconElement = notification.querySelector('.notification-icon');
@@ -363,126 +353,117 @@ src="https://www.facebook.com/tr?id=2276519576162204&ev=PageView&noscript=1"
             setTimeout(() => { notification.classList.remove('show'); }, 3000);
         }
 
-        // ====================================
-        //      GOOGLE SHEETS INTEGRATION
-        // ====================================
+        function generateEventId(billNo) {
+            return `purchase_${billNo}_${Date.now()}`;
+        }
+
+        function isValidEmail(email) {
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        }
+
+        function isValidPhone(phone) {
+            const cleaned = phone.replace(/[\s\-+]/g, '');
+            return /^01\d{8,9}$/.test(cleaned) || /^601\d{8,9}$/.test(cleaned);
+        }
+
+        function normalizePhone(phone) {
+            let cleaned = phone.replace(/[\s\-()]/g, '');
+            if (cleaned.startsWith('+')) cleaned = cleaned.substring(1);
+            if (cleaned.startsWith('0') && !cleaned.startsWith('60')) {
+                cleaned = '60' + cleaned.substring(1);
+            }
+            return cleaned;
+        }
+
         async function updatePaymentStatus(orderId) {
             try {
                 const response = await fetch(GOOGLE_SCRIPT_URL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded', },
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: new URLSearchParams({ action: 'updatePayment', orderId: orderId })
                 });
-                
                 const result = await response.json();
-                
                 if (result.status === 'success') {
-                    console.log('✅ Payment status updated in Google Sheets');
-                    showNotification('Status pembayaran telah dikemaskini. Emel pengesahan telah dihantar.', 'success');
-                    return true;
-                } else {
-                    console.error('❌ Failed to update payment status:', result.message);
-                    showNotification('Ralat mengemaskini status pembayaran: ' + result.message, 'error');
-                    return false;
+                    showNotification('Status pembayaran telah dikemaskini.', 'success');
                 }
             } catch (error) {
-                console.error('❌ Error updating payment status:', error);
-                showNotification('Ralat menghubungi pelayan. Sila segarkan halaman.', 'error');
-                return false;
+                // Silent fail for non-critical update
             }
         }
 
-        // ====================================
-        //      CONVERSION API & PIXEL
-        // ====================================
-        async function sendConversionEvent(orderData) {
+        async function sendConversionEvent(orderData, eventId) {
             try {
-                // 1. Prepare Customer Data (First/Last Name split)
-                const fullName = orderData.orderData?.customerName || 'Pelanggan';
+                const fullName = orderData.orderData?.customerName || '';
                 const nameParts = fullName.trim().split(' ');
-                const firstName = nameParts[0];
+                const firstName = nameParts[0] || '';
                 const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
 
-                // 2. Generate Unique Event ID
-                const billNo = orderData.billNo || orderData.orderId || 'UNKNOWN';
-                const eventId = `purchase_${billNo}_${Date.now()}`;
+                const email = orderData.orderData?.customerEmail || '';
+                const phone = orderData.orderData?.customerPhone || '';
+                const normalizedPhone = normalizePhone(phone);
 
-                // 3. Prepare Payload matching your conversion-api.js schema
+                const customerData = {};
+                if (isValidEmail(email)) customerData.em = email.toLowerCase().trim();
+                if (isValidPhone(phone)) customerData.ph = normalizedPhone;
+                if (firstName) customerData.fn = firstName;
+                if (lastName) customerData.ln = lastName;
+
+                const value = parseFloat(orderData.totalAmount || orderData.orderData?.total || 0);
+
                 const payload = {
                     eventName: 'Purchase',
                     eventId: eventId,
-                    value: orderData.totalAmount || orderData.orderData?.total || 0,
+                    value: value,
                     currency: 'MYR',
-                    customerData: {
-                        email: orderData.orderData?.customerEmail || 'email@example.com',
-                        phone: orderData.orderData?.customerPhone || '0123456789',
-                        firstName: firstName,
-                        lastName: lastName
-                    },
+                    customerData: customerData,
                     contentData: {
-                        content_name: 'PROSTREAM 4 App Power Package',
+                        content_name: orderData.orderData?.product || 'PROSTREAM 4 App Power Package',
                         content_category: 'Streaming',
                         content_ids: ['prostream_4app_package'],
-                        content_type: 'product'
+                        content_type: 'product',
+                        value: value,
+                        currency: 'MYR'
                     }
                 };
 
-                console.log('Sending Conversion API request:', payload);
-
-                // 4. Send to your API
                 const response = await fetch('/api/conversion-api', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
                 
                 const result = await response.json();
-                
-                if (result.success) {
-                    console.log('✅ Conversion API sent successfully:', result.message);
-                    return true;
-                } else {
-                    console.error('❌ Conversion API failed:', result.error);
-                    return false;
-                }
+                return result.success === true;
             } catch (error) {
-                console.error('❌ Error sending conversion event:', error);
                 return false;
             }
         }
 
-        function sendMetaPixelConversion(orderData) {
+        function sendMetaPixelConversion(orderData, eventId) {
             try {
-                const purchaseValue = orderData.totalAmount || orderData.orderData?.total || 0;
-                
-                // Use the same Event ID for deduplication
-                const billNo = orderData.billNo || orderData.orderId || 'UNKNOWN';
-                const eventId = `purchase_${billNo}_${Date.now()}`;
+                const value = parseFloat(orderData.totalAmount || orderData.orderData?.total || 0);
+                const productName = orderData.orderData?.product || 'PROSTREAM 4 App Power Package';
 
-                // Standard Browser Pixel Event (Basic matching is safer if Advanced data is partial)
                 fbq('track', 'Purchase', {
-                    content_name: 'PROSTREAM 4 App Power Package',
+                    content_name: productName,
                     content_category: 'Streaming',
                     content_ids: ['prostream_4app_package'],
                     content_type: 'product',
-                    value: purchaseValue,
+                    value: value,
                     currency: 'MYR',
-                    eventID: eventId // CRITICAL: Matches the API event ID for deduplication
+                    eventID: eventId
                 });
                 
-                console.log('✅ Meta Pixel Purchase event fired successfully (Browser)');
                 return true;
             } catch (error) {
-                console.error('❌ Error sending Meta Pixel conversion:', error);
                 return false;
             }
         }
 
-        // ====================================
-        //      UI DISPLAY FUNCTIONS
-        // ====================================
         function displayOrderDetails(orderData) {
             const orderDetailsElement = document.getElementById('orderDetails');
+            const value = parseFloat(orderData.totalAmount || orderData.orderData?.total || 0);
+            
             orderDetailsElement.innerHTML = `
                 <h3>Butiran Pesanan</h3>
                 <div class="detail-row"><span>No. Pesanan:</span><span>${orderData.billNo || orderData.billExternalReferenceNo || 'N/A'}</span></div>
@@ -490,7 +471,7 @@ src="https://www.facebook.com/tr?id=2276519576162204&ev=PageView&noscript=1"
                 <div class="detail-row"><span>Emel:</span><span>${orderData.orderData?.customerEmail || 'N/A'}</span></div>
                 <div class="detail-row"><span>No. Telefon:</span><span>${orderData.orderData?.customerPhone || 'N/A'}</span></div>
                 <div class="detail-row"><span>Produk:</span><span>${orderData.orderData?.product || 'N/A'}</span></div>
-                <div class="detail-row"><span>Jumlah:</span><span>RM ${(orderData.totalAmount || orderData.orderData?.total || 0).toFixed(2)}</span></div>
+                <div class="detail-row"><span>Jumlah:</span><span>RM ${value.toFixed(2)}</span></div>
                 ${orderData.timestamp ? `<div class="detail-row"><span>Tarikh:</span><span>${new Date(orderData.timestamp).toLocaleString('ms-MY')}</span></div>` : ''}
             `;
         }
@@ -506,7 +487,6 @@ src="https://www.facebook.com/tr?id=2276519576162204&ev=PageView&noscript=1"
             statusTitle.className = '';
             
             if (statusId === '1') {
-                // SUCCESS STATUS
                 statusIcon.innerHTML = '✓';
                 statusIcon.classList.add('success-icon');
                 statusTitle.textContent = 'Pembayaran Berjaya!';
@@ -516,7 +496,6 @@ src="https://www.facebook.com/tr?id=2276519576162204&ev=PageView&noscript=1"
                 stepsSection.style.display = 'block';
                 return true;
             } else if (statusId === '2') {
-                // PENDING
                 statusIcon.innerHTML = '⏳';
                 statusIcon.classList.add('pending-icon');
                 statusTitle.textContent = 'Pembayaran Dalam Proses';
@@ -526,7 +505,6 @@ src="https://www.facebook.com/tr?id=2276519576162204&ev=PageView&noscript=1"
                 stepsSection.style.display = 'none';
                 return false;
             } else {
-                // FAILED
                 statusIcon.innerHTML = '✗';
                 statusIcon.classList.add('error-icon');
                 statusTitle.textContent = 'Pembayaran Gagal';
@@ -550,16 +528,40 @@ src="https://www.facebook.com/tr?id=2276519576162204&ev=PageView&noscript=1"
         function updateWhatsAppButton(orderData) {
             const whatsappBtn = document.getElementById('whatsapp-btn');
             if (whatsappBtn && orderData.orderData) {
-                const message = encodeURIComponent(`Hai%2C%20saya%20baru%20sahaja%20membeli%20pakej%20PROSTREAM%20dan%20perlu%20bantuan.%20Nama%3A%20${orderData.orderData.customerName}%2C%20Email%3A%20${orderData.orderData.customerEmail}%2C%20No.%20Telefon%3A%20${orderData.orderData.customerPhone}`);
-                whatsappBtn.href = `https://wa.me/60172703949?text=${message}`;
+                const name = orderData.orderData.customerName || '';
+                const email = orderData.orderData.customerEmail || '';
+                const phone = orderData.orderData.customerPhone || '';
+                const message = encodeURIComponent(`Hai, saya baru sahaja membeli pakej PROSTREAM dan perlu bantuan.\nNama: ${name}\nEmail: ${email}\nNo. Telefon: ${phone}`);
+                whatsappBtn.href = `https://wa.me/${WHATSAPP_NUMBER}?text=${message}`;
             }
         }
 
-        // ====================================
-        //      MAIN LOGIC
-        // ====================================
+        function hasConversionFired(billNo) {
+            const firedConversions = JSON.parse(localStorage.getItem('firedConversions') || '{}');
+            return firedConversions[billNo] === true;
+        }
+
+        function markConversionFired(billNo) {
+            const firedConversions = JSON.parse(localStorage.getItem('firedConversions') || '{}');
+            firedConversions[billNo] = true;
+            localStorage.setItem('firedConversions', JSON.stringify(firedConversions));
+        }
+
+        async function fireConversions(orderData) {
+            const billNo = orderData.billNo || orderData.billExternalReferenceNo || orderData.orderId;
+            
+            if (!billNo) return;
+            if (hasConversionFired(billNo)) return;
+
+            const eventId = generateEventId(billNo);
+
+            sendMetaPixelConversion(orderData, eventId);
+            await sendConversionEvent(orderData, eventId);
+            
+            markConversionFired(billNo);
+        }
+
         async function loadOrderDetails() {
-            console.log('🔄 Loading order details...');
             try {
                 const urlParams = new URLSearchParams(window.location.search);
                 const statusId = urlParams.get('status_id');
@@ -568,87 +570,69 @@ src="https://www.facebook.com/tr?id=2276519576162204&ev=PageView&noscript=1"
                 const msg = urlParams.get('msg');
                 const transactionId = urlParams.get('transaction_id');
                 
-                // --- FLOW 1: TOYYIBPAY REDIRECT ---
                 if (statusId) {
-                    console.log('🔍 ToyyibPay redirect detected. Processing status...');
-                    
-                    // 1. Display Status UI
                     const isPaymentSuccessful = displayPaymentStatus(statusId, billCode, orderId, msg, transactionId);
                     
-                    // 2. Handle Non-Successful Payment (Stop here, do not fire Purchase API)
                     if (!isPaymentSuccessful) {
                         const orderDetailsElement = document.getElementById('orderDetails');
                         orderDetailsElement.innerHTML = `
                             <h3>Butiran Pesanan</h3>
                             <div class="detail-row"><span>No. Pesanan:</span><span>${billCode || 'N/A'}</span></div>
                             <div class="detail-row"><span>ID Transaksi:</span><span>${transactionId || 'N/A'}</span></div>
-                            <div class="detail-row"><span>Status:</span><span>${statusId === '1' ? 'Berjaya' : statusId === '2' ? 'Dalam Proses' : statusId === '3' ? 'Gagal' : 'Tidak Diketahui'}</span></div>
+                            <div class="detail-row"><span>Status:</span><span>${statusId === '1' ? 'Berjaya' : statusId === '2' ? 'Dalam Proses' : 'Gagal'}</span></div>
                             <div class="detail-row"><span>Mesej:</span><span>${msg || 'N/A'}</span></div>
                         `;
                         const whatsappBtn = document.getElementById('whatsapp-btn');
                         if (whatsappBtn) {
-                            const message = encodeURIComponent(`Hai%2C%20saya%20mempunyai%20masalah%20dengan%20pembayaran%20saya.%20No.%20Pesanan%3A%20${billCode || 'N/A'}%2C%20ID%20Transaksi%3A%20${transactionId || 'N/A'}`);
-                            whatsappBtn.href = `https://wa.me/601127412402?text=${message}`;
+                            const message = encodeURIComponent(`Hai, saya mempunyai masalah dengan pembayaran saya.\nNo. Pesanan: ${billCode || 'N/A'}\nID Transaksi: ${transactionId || 'N/A'}`);
+                            whatsappBtn.href = `https://wa.me/${WHATSAPP_NUMBER}?text=${message}`;
                         }
-                        return; // EXIT EARLY
+                        return;
                     }
 
-                    // 3. HANDLE SUCCESSFUL PAYMENT
-                    console.log('✅ Payment Successful. Proceeding with API & Pixel firing.');
-
-                    // Reconstruct orderData (ToyyibPay doesn't send back all user data, so we enrich from localStorage)
                     let orderData = {
                         billNo: billCode,
                         billExternalReferenceNo: orderId,
                         transactionId: transactionId,
                         orderData: {
-                            customerName: 'Pelanggan', // Fallback
-                            customerEmail: 'email@example.com', // Fallback
-                            customerPhone: '0123456789', // Fallback
+                            customerName: '',
+                            customerEmail: '',
+                            customerPhone: '',
                             product: 'PROSTREAM 4 App Power Package',
-                            total: 34.90
+                            total: 0
                         },
-                        totalAmount: 34.90,
+                        totalAmount: 0,
                         timestamp: new Date().toISOString(),
                     };
                     
-                    // Enrich with LocalStorage data if available
                     const pendingOrder = localStorage.getItem('pendingOrder');
                     if (pendingOrder) {
                         const lsOrderData = JSON.parse(pendingOrder);
-                        orderData.orderData = lsOrderData.orderData || orderData.orderData;
-                        orderData.totalAmount = lsOrderData.totalAmount || orderData.totalAmount;
+                        orderData.orderData.customerName = lsOrderData.orderData?.customerName || '';
+                        orderData.orderData.customerEmail = lsOrderData.orderData?.customerEmail || '';
+                        orderData.orderData.customerPhone = lsOrderData.orderData?.customerPhone || '';
+                        orderData.orderData.product = lsOrderData.orderData?.product || orderData.orderData.product;
+                        orderData.orderData.total = lsOrderData.totalAmount || lsOrderData.orderData?.total || 0;
+                        orderData.totalAmount = lsOrderData.totalAmount || lsOrderData.orderData?.total || 0;
                     }
                     
                     displayOrderDetails(orderData);
                     updateWhatsAppButton(orderData);
                     
-                    // 4. FIRE CONVERSIONS (API + PIXEL) ONLY ON SUCCESS
-                    let updateOrderId = orderData.billExternalReferenceNo || orderData.billNo;
-                    
-                    // A. Update Google Sheets (Non-blocking but good practice to do)
-                    if (updateOrderId) {
-                        console.log('Updating Google Sheets status...');
-                        updatePaymentStatus(updateOrderId); 
+                    const updateId = orderData.billExternalReferenceNo || orderData.billNo;
+                    if (updateId) {
+                        updatePaymentStatus(updateId);
                     }
 
-                    // B. Send Server-Side Conversion API (CAPI)
-                    await sendConversionEvent(orderData);
+                    await fireConversions(orderData);
                     
-                    // C. Send Browser Meta Pixel
-                    sendMetaPixelConversion(orderData);
-                    
-                    // 5. Cleanup
                     localStorage.removeItem('pendingOrder');
                     return;
                 }
 
-                // --- FLOW 2: QR PAYMENT / LOCALSTORAGE ---
-                console.log('🔍 No ToyyibPay status_id found. Falling back to localStorage/QR logic.');
-                let pendingOrder = localStorage.getItem('pendingOrder');
+                const pendingOrder = localStorage.getItem('pendingOrder');
                 
                 if (!pendingOrder) {
-                    console.error('❌ No pending order found in localStorage and no URL parameters.');
                     showOrderDetailsError();
                     document.getElementById('statusIcon').innerHTML = '✗';
                     document.getElementById('statusIcon').className = 'status-icon error-icon';
@@ -660,31 +644,21 @@ src="https://www.facebook.com/tr?id=2276519576162204&ev=PageView&noscript=1"
                 }
                 
                 const orderData = JSON.parse(pendingOrder);
-                console.log('✅ Parsed order data from localStorage:', orderData);
                 
-                // QR Flow assumes success (because user passed OCR in qr.html)
-                // 1. Display Success UI
                 displayPaymentStatus('1', orderData.billNo, orderData.orderId, 'ok', orderData.transactionId);
                 displayOrderDetails(orderData);
                 updateWhatsAppButton(orderData);
                 
-                // 2. FIRE CONVERSIONS (API + PIXEL)
-                let updateOrderId = orderData.billExternalReferenceNo || orderData.billNo;
-                
-                if (updateOrderId) {
-                    console.log('Updating Google Sheets status (QR)...');
-                    updatePaymentStatus(updateOrderId);
+                const updateId = orderData.billExternalReferenceNo || orderData.billNo;
+                if (updateId) {
+                    updatePaymentStatus(updateId);
                 }
 
-                // API & Pixel
-                await sendConversionEvent(orderData);
-                sendMetaPixelConversion(orderData);
+                await fireConversions(orderData);
 
-                // 3. Cleanup
                 localStorage.removeItem('pendingOrder');
                 
             } catch (error) {
-                console.error('❌ Error in loadOrderDetails:', error);
                 showOrderDetailsError();
             }
         }
